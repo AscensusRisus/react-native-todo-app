@@ -1,0 +1,98 @@
+# Donewell
+
+Donewell is a calm, cross-platform task and routine tracker for people who want a lightweight daily view without turning their day into a spreadsheet. It is built with Expo and React Native, with Firebase providing account authentication and private cloud data.
+
+Users create an account, verify their email, then organise routines and one-time tasks around a simple daily workflow: see what is due, mark it complete, and review recent consistency.
+
+## Features
+
+- Email/password sign-up, email verification, sign-in, and password reset
+- Private Firestore task data scoped to the signed-in user
+- Create, edit, complete, and delete tasks
+- Optional notes, categories, and low/normal/high priority
+- Daily, weekday, weekend, and one-time schedules
+- Due dates with upcoming and overdue states
+- Today progress, task filters, seven-day activity, and streak summaries
+- Responsive mobile-first layout for Android and iOS
+
+## Tech stack
+
+- Expo and React Native
+- Expo Router for navigation
+- React Native Paper for UI components
+- Firebase Authentication and Cloud Firestore
+- AsyncStorage-backed Firebase Auth persistence on native devices
+- TypeScript, ESLint, and Jest
+
+## Project structure
+
+```text
+app/                 Screens and Expo Router routes
+components/          Reusable UI, including the task form and task card
+hooks/               Firestore subscription hooks
+lib/task-domain.ts   Scheduling, validation, due-date, and streak rules
+lib/habits.ts        Firestore task CRUD operations
+lib/firebase*.ts     Web and native Firebase configuration
+__tests__/           Unit tests for task-domain rules
+```
+
+## Run locally
+
+### Prerequisites
+
+- Node.js and npm
+- Expo Go on an Android or iOS device
+- A Firebase project with Email/Password Authentication and Firestore enabled
+
+### Setup
+
+1. Install dependencies:
+
+   ```bash
+   npm install
+   ```
+
+2. Create `.env.local` in the project root:
+
+   ```env
+   EXPO_PUBLIC_FIREBASE_API_KEY=...
+   EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN=...
+   EXPO_PUBLIC_FIREBASE_PROJECT_ID=...
+   EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET=...
+   EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=...
+   EXPO_PUBLIC_FIREBASE_APP_ID=...
+   ```
+
+3. Copy the rules from [firestore.rules](./firestore.rules) into **Firestore Database → Rules** in the Firebase Console and publish them.
+
+4. Start Expo:
+
+   ```bash
+   npm run start
+   ```
+
+5. Scan the QR code with Expo Go while the phone and computer are on the same Wi-Fi network.
+
+The `EXPO_PUBLIC_FIREBASE_*` values are client configuration values. Never add a Firebase Admin SDK service-account key to this app or commit `.env.local`.
+
+## Quality checks
+
+```bash
+npm run verify
+```
+
+This runs TypeScript checking, Expo linting, and unit tests covering date validation, one-time task visibility, due-date state, and streak calculation.
+
+## Current scope
+
+Donewell is a portfolio v1. It intentionally does not yet include offline task sync, push notifications, shared lists, a released store build, or automated Firebase security-rule tests. Those are the most useful next milestones after real-device testing.
+
+## Real-device checklist
+
+Before publishing or recording a demo:
+
+1. Register and verify a new account.
+2. Close and reopen Expo Go; confirm the verified session persists.
+3. Create, edit, complete, and delete tasks across each schedule type.
+4. Confirm that a second account cannot read the first account's tasks.
+5. Re-publish Firestore rules after every schema change.
