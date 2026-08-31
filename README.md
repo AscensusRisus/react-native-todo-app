@@ -1,6 +1,6 @@
-# Donewell
+# React Native Todo App
 
-Donewell is a calm, cross-platform task and routine tracker for people who want a lightweight daily view without turning their day into a spreadsheet. It is built with Expo and React Native, with Firebase providing account authentication and private cloud data.
+React Native Todo App is a calm, cross-platform task and routine tracker for people who want a lightweight daily view without turning their day into a spreadsheet. It is built with Expo and React Native, with Firebase providing account authentication and private cloud data.
 
 Users create an account, verify their email, then organise routines and one-time tasks around a simple daily workflow: see what is due, mark it complete, and review recent consistency.
 
@@ -85,7 +85,7 @@ This runs TypeScript checking, Expo linting, and unit tests covering date valida
 
 ## Current scope
 
-Donewell is a portfolio v1. It intentionally does not yet include offline task sync, push notifications, shared lists, a released store build, or automated Firebase security-rule tests. Those are the most useful next milestones after real-device testing.
+React Native Todo App is a portfolio v1. It intentionally does not yet include offline task sync, push notifications, shared lists, a released store build, or automated Firebase security-rule tests. Those are the most useful next milestones after real-device testing.
 
 ## Real-device checklist
 

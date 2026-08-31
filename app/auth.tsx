@@ -63,7 +63,7 @@ export default function AuthScreen() {
         <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
           <View style={styles.brand}>
             <View style={styles.mark}><MaterialCommunityIcons name="check-bold" size={28} color="#FFFFFF" /></View>
-            <Text variant="headlineLarge" style={styles.brandName}>Donewell</Text>
+            <Text variant="headlineLarge" style={styles.brandName}>Todo App</Text>
             <Text variant="bodyLarge" style={styles.tagline}>A calm place for the things you want to keep doing.</Text>
           </View>
 

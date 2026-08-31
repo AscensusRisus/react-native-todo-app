@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Donewell",
-    "slug": "donewell",
+    "name": "Todo App",
+    "slug": "react-native-todo-app",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "donewell",
+    "scheme": "react-native-todo-app",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -17,7 +17,7 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.doguskoksal.donewell"
+      "package": "com.doguskoksal.reactnativetodoapp"
     },
     "web": {
       "bundler": "metro",

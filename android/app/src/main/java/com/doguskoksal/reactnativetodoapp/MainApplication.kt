@@ -1,4 +1,4 @@
-package com.doguskoksal.donewell
+package com.doguskoksal.reactnativetodoapp
 
 import android.app.Application
 import android.content.res.Configuration
