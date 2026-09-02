@@ -70,7 +70,7 @@ export default function TodayScreen() {
           <Text style={styles.emptyText}>{todaysTasks.length ? "Try another filter to see your tasks." : "Build a routine without turning your day into a spreadsheet."}</Text>
           {!todaysTasks.length && <Button mode="contained" onPress={() => router.navigate("/add-habit")}>Add your first task</Button>}
         </Surface>
-      ) : visibleTasks.map((task) => <TaskCard key={task.id} task={task} today={today} onToggle={(item) => void toggleTask(item)} onEdit={(item) => router.push({ pathname: "/task/[id]", params: { id: item.id } })} onDelete={confirmDelete} />)}
+      ) : visibleTasks.map((task) => <TaskCard key={task.id} task={task} today={today} onToggle={(item) => void toggleTask(item)} onEdit={(item) => router.push({ pathname: "/task/[id]", params: { id: item.id } })} onDelete={confirmDelete} onStartFocus={(item) => router.push({ pathname: "/focus", params: { taskId: item.id } })} />)}
       {habits.filter((task) => taskDateState(task) === "upcoming").slice(0, 3).length > 0 && <View style={styles.upcoming}><Text variant="titleMedium" style={styles.upcomingTitle}>Coming up</Text>{habits.filter((task) => taskDateState(task) === "upcoming").slice(0, 3).map((task) => <Button key={task.id} compact mode="text" icon="calendar-clock" onPress={() => router.push({ pathname: "/task/[id]", params: { id: task.id } })}>{dueDateLabel(task.dueDate)} · {task.title}</Button>)}</View>}
     </AppScreen>
   );

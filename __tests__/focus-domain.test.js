@@ -1,4 +1,4 @@
-import { completedSession, durationFor, focusedSecondsForInterruptedTimer, isTimerFinished, pauseTimer, remainingSeconds, resumeTimer, todayFocusSummary, validateStoredTimer } from "../lib/focus-domain";
+import { completedSession, durationFor, focusedSecondsForInterruptedTimer, interruptedSession, isTimerFinished, pauseTimer, remainingSeconds, resumeTimer, todayFocusSummary, validateStoredTimer } from "../lib/focus-domain";
 
 const running = (overrides = {}) => ({ version: 1, ownerUid: "user-1", intervalId: "interval-1", kind: "focus", taskId: "task-1", taskTitleSnapshot: "Draft", intention: "Opening", durationSeconds: 1500, startedAtMs: 1_000, deadlineAtMs: 1_501_000, remainingWhenPausedSeconds: null, phase: "running", ...overrides });
 
@@ -34,6 +34,8 @@ describe("focus timer domain", () => {
   it("only preserves interrupted focus after one minute", () => {
     expect(focusedSecondsForInterruptedTimer(running(), 60_500)).toBe(59);
     expect(focusedSecondsForInterruptedTimer(running(), 61_000)).toBe(60);
+    expect(interruptedSession(running(), 60_500)).toBeNull();
+    expect(interruptedSession(running(), 61_000)).toMatchObject({ status: "interrupted", focusedSeconds: 60 });
     expect(completedSession(running(), 1_501_000).focusedSeconds).toBe(1500);
   });
 

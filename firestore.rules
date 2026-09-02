@@ -27,5 +27,25 @@ service cloud.firestore {
         && (!request.resource.data.keys().hasAll(['dueDate']) || request.resource.data.dueDate == null || request.resource.data.dueDate is string)
         && request.resource.data.completions is list;
     }
+
+    match /users/{userId}/focusSessions/{sessionId} {
+      allow read: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null && request.auth.uid == userId
+        && request.resource.data.keys().hasOnly(['taskId', 'taskTitleSnapshot', 'intention', 'kind', 'status', 'plannedSeconds', 'focusedSeconds', 'localDate', 'startedAt', 'endedAt', 'createdAt'])
+        && request.resource.data.keys().hasAll(['taskId', 'taskTitleSnapshot', 'intention', 'kind', 'status', 'plannedSeconds', 'focusedSeconds', 'localDate', 'startedAt', 'endedAt', 'createdAt'])
+        && (request.resource.data.taskId == null || (request.resource.data.taskId is string && request.resource.data.taskId.size() <= 200))
+        && (request.resource.data.taskTitleSnapshot == null || (request.resource.data.taskTitleSnapshot is string && request.resource.data.taskTitleSnapshot.size() <= 80))
+        && request.resource.data.intention is string && request.resource.data.intention.size() <= 120
+        && request.resource.data.kind in ['focus', 'shortBreak', 'longBreak']
+        && request.resource.data.status in ['completed', 'interrupted']
+        && request.resource.data.plannedSeconds is int && request.resource.data.plannedSeconds >= 0 && request.resource.data.plannedSeconds <= 14400
+        && request.resource.data.focusedSeconds is int && request.resource.data.focusedSeconds >= 0 && request.resource.data.focusedSeconds <= request.resource.data.plannedSeconds
+        && request.resource.data.localDate is string && request.resource.data.localDate.size() == 10
+        && request.resource.data.startedAt is timestamp && request.resource.data.endedAt is timestamp && request.resource.data.createdAt is timestamp
+        && request.resource.data.endedAt >= request.resource.data.startedAt
+        && (request.resource.data.kind == 'focus' || request.resource.data.focusedSeconds == 0)
+        && (request.resource.data.status == 'completed' || (request.resource.data.kind == 'focus' && request.resource.data.focusedSeconds >= 60));
+      allow update, delete: if false;
+    }
   }
 }

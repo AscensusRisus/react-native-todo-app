@@ -13,6 +13,9 @@ Users create an account, verify their email, then organise routines and one-time
 - Daily, weekday, weekend, and one-time schedules
 - Due dates with upcoming and overdue states
 - Today progress, task filters, seven-day activity, and streak summaries
+- Task-connected Focus timer with 25-minute focus, 5-minute short-break, and 15-minute long-break intervals
+- Timestamp-based countdown recovery after backgrounding or restarting the app on the same device
+- Private, immutable focus-session history with retry-safe local syncing when a connection is unavailable
 - Responsive mobile-first layout for Android and iOS
 
 ## Tech stack
@@ -31,6 +34,7 @@ app/                 Screens and Expo Router routes
 components/          Reusable UI, including the task form and task card
 hooks/               Firestore subscription hooks
 lib/task-domain.ts   Scheduling, validation, due-date, and streak rules
+lib/focus-domain.ts  Timestamp-derived timer state and focus-session rules
 lib/habits.ts        Firestore task CRUD operations
 lib/firebase*.ts     Web and native Firebase configuration
 __tests__/           Unit tests for task-domain rules
@@ -81,11 +85,11 @@ The `EXPO_PUBLIC_FIREBASE_*` values are client configuration values. Never add a
 npm run verify
 ```
 
-This runs TypeScript checking, Expo linting, and unit tests covering date validation, one-time task visibility, due-date state, and streak calculation.
+This runs TypeScript checking, Expo linting, and unit tests covering task scheduling plus timestamp-derived focus timer behavior.
 
 ## Current scope
 
-React Native Todo App is a portfolio v1. It intentionally does not yet include offline task sync, push notifications, shared lists, a released store build, or automated Firebase security-rule tests. Those are the most useful next milestones after real-device testing.
+Focus intervals are local to the current device while active; they are not live-controlled across devices. The app does not use notifications or keep-awake behavior, so timer correctness comes from its stored deadline rather than the app staying open. Focus sessions retry locally after a temporary Firestore failure. The app intentionally does not yet include shared lists, a released store build, or automated Firebase security-rule tests.
 
 ## Real-device checklist
 
@@ -96,3 +100,6 @@ Before publishing or recording a demo:
 3. Create, edit, complete, and delete tasks across each schedule type.
 4. Confirm that a second account cannot read the first account's tasks.
 5. Re-publish Firestore rules after every schema change.
+6. Start a focus round, background or lock the device, then return and confirm the timestamp-derived remaining time.
+7. Pause a focus round, force-close Expo Go, reopen it with the same account, and confirm the paused value is restored.
+8. Test a finished round while offline, reconnect, and confirm one focus session eventually appears in Firestore.

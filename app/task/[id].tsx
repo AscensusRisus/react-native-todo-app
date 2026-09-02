@@ -62,6 +62,7 @@ export default function TaskDetailScreen() {
       <Text variant="headlineMedium" style={styles.heading}>{task.title}</Text>
       <View style={styles.statusRow}>{dateState !== "routine" && <Chip compact icon={dateState === "overdue" ? "alert-circle-outline" : "calendar"} style={dateState === "overdue" ? styles.overdue : styles.due}>{dateState === "overdue" ? `Overdue · ${dueDateLabel(task.dueDate)}` : `Due ${dueDateLabel(task.dueDate)}`}</Chip>}<Chip compact icon={done ? "check" : "circle-outline"}>{done ? "Done today" : "Open"}</Chip></View>
       <Button mode={done ? "outlined" : "contained"} icon={done ? "undo" : "check"} onPress={toggle} style={styles.complete}>{done ? "Mark as to do" : "Mark done for today"}</Button>
+      {!done && <Button mode="outlined" icon="timer-outline" onPress={() => router.push({ pathname: "/focus", params: { taskId: task.id } })} style={styles.focus}>Start focus</Button>}
       {actionError && <Text style={styles.error}>{actionError}</Text>}
       <TaskForm key={task.id} initialValue={initialValue} onSubmit={save} submitLabel="Save changes" />
     </AppScreen>
@@ -69,5 +70,5 @@ export default function TaskDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  top: { height: 50, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }, topTitle: { color: colors.muted, letterSpacing: 1.1, fontWeight: "800", fontSize: 11 }, heading: { color: colors.ink, fontWeight: "800", letterSpacing: -0.5 }, lead: { color: colors.muted, marginVertical: 8 }, statusRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }, overdue: { backgroundColor: colors.dangerSoft }, due: { backgroundColor: colors.warningSoft }, complete: { marginTop: 18, marginBottom: 12 }, error: { color: colors.danger, marginBottom: 12 }, loader: { marginTop: 80 },
+  top: { height: 50, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }, topTitle: { color: colors.muted, letterSpacing: 1.1, fontWeight: "800", fontSize: 11 }, heading: { color: colors.ink, fontWeight: "800", letterSpacing: -0.5 }, lead: { color: colors.muted, marginVertical: 8 }, statusRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }, overdue: { backgroundColor: colors.dangerSoft }, due: { backgroundColor: colors.warningSoft }, complete: { marginTop: 18, marginBottom: 10 }, focus: { marginBottom: 12 }, error: { color: colors.danger, marginBottom: 12 }, loader: { marginTop: 80 },
 });

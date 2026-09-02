@@ -11,9 +11,10 @@ type TaskCardProps = {
   onToggle: (task: Task) => void;
   onEdit: (task: Task) => void;
   onDelete: (task: Task) => void;
+  onStartFocus: (task: Task) => void;
 };
 
-export function TaskCard({ task, today, onToggle, onEdit, onDelete }: TaskCardProps) {
+export function TaskCard({ task, today, onToggle, onEdit, onDelete, onStartFocus }: TaskCardProps) {
   const [menuVisible, setMenuVisible] = useState(false);
   const done = task.completions.includes(today);
   const accent = categoryColors[task.category ?? "Personal"] ?? colors.primary;
@@ -46,6 +47,7 @@ export function TaskCard({ task, today, onToggle, onEdit, onDelete }: TaskCardPr
         anchor={<IconButton icon="dots-horizontal" accessibilityLabel={`Options for ${task.title}`} onPress={() => setMenuVisible(true)} />}
       >
         <Menu.Item leadingIcon={done ? "checkbox-blank-circle-outline" : "check-circle-outline"} title={done ? "Mark as to do" : "Mark as done"} onPress={() => { setMenuVisible(false); onToggle(task); }} />
+        {!done && <Menu.Item leadingIcon="timer-outline" title="Start focus" onPress={() => { setMenuVisible(false); onStartFocus(task); }} />}
         <Menu.Item leadingIcon="pencil-outline" title="Edit task" onPress={() => { setMenuVisible(false); onEdit(task); }} />
         <Menu.Item leadingIcon="delete-outline" title="Delete task" onPress={() => { setMenuVisible(false); onDelete(task); }} />
       </Menu>

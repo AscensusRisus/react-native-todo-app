@@ -17,6 +17,7 @@ export default function TabsLayout() {
     >
       <Tabs.Screen name="index" options={{ title: "Today", tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="check-circle-outline" size={size} color={color} /> }} />
       <Tabs.Screen name="add-habit" options={{ title: "Add task", tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="plus-circle" size={size + 4} color={color} /> }} />
+      <Tabs.Screen name="focus" options={{ title: "Focus", tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="timer-outline" size={size} color={color} /> }} />
       <Tabs.Screen name="streaks" options={{ title: "Progress", tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="chart-timeline-variant" size={size} color={color} /> }} />
     </Tabs>
   );

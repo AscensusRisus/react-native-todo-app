@@ -142,7 +142,12 @@ export function useFocusTimer(userId?: string) {
     setFinishedTimer(null);
     if (session) await enqueueSession(session);
   }, [enqueueSession, setActiveTimer]);
+  const unlinkTask = useCallback(async (taskId: string) => {
+    const active = timerRef.current;
+    if (!active || active.taskId !== taskId) return;
+    await setActiveTimer({ ...active, taskId: null });
+  }, [setActiveTimer]);
   const dismissFinished = useCallback(() => { setFinishedTimer(null); finishingIdRef.current = null; }, []);
 
-  return { timer, remainingSeconds: timer ? remainingSeconds(timer, nowMs) : null, finishedTimer, pendingCount, syncError, restoring, start, pause, resume, end, dismissFinished, retryPending };
+  return { timer, remainingSeconds: timer ? remainingSeconds(timer, nowMs) : null, finishedTimer, pendingCount, syncError, restoring, start, pause, resume, end, unlinkTask, dismissFinished, retryPending };
 }
