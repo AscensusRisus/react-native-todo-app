@@ -1,9 +1,10 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { Platform, StyleSheet } from "react-native";
-import { colors } from "@/lib/theme";
+import { useAppTheme } from "@/lib/app-theme-context";
 
 export default function TabsLayout() {
+  const { colors } = useAppTheme();
   return (
     <Tabs
       screenOptions={{
@@ -11,7 +12,7 @@ export default function TabsLayout() {
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.muted,
         tabBarLabelStyle: styles.label,
-        tabBarStyle: styles.bar,
+        tabBarStyle: [styles.bar, { backgroundColor: colors.surface, borderTopColor: colors.line }],
         tabBarItemStyle: styles.item,
       }}
     >
@@ -28,9 +29,7 @@ const styles = StyleSheet.create({
     height: Platform.OS === "ios" ? 88 : 72,
     paddingTop: 8,
     paddingBottom: Platform.OS === "ios" ? 24 : 10,
-    backgroundColor: colors.surface,
     borderTopWidth: 1,
-    borderTopColor: colors.line,
     elevation: 8,
     shadowColor: "#17201B",
     shadowOpacity: 0.08,

@@ -1,4 +1,4 @@
-import { MD3LightTheme, type MD3Theme } from "react-native-paper";
+import { MD3DarkTheme, MD3LightTheme, type MD3Theme } from "react-native-paper";
 
 export const colors = {
   ink: "#17201B",
@@ -13,6 +13,12 @@ export const colors = {
   dangerSoft: "#FBE7E5",
   warning: "#8A5A12",
   warningSoft: "#FFF0D6",
+};
+
+export type AppColors = typeof colors;
+export const darkColors: AppColors = {
+  ink: "#F1F5F1", muted: "#AAB7AE", canvas: "#121714", surface: "#1B211D", line: "#334038",
+  primary: "#74C69D", primarySoft: "#193A2B", accent: "#F1B06B", danger: "#FF8E8A", dangerSoft: "#482522", warning: "#E8BB72", warningSoft: "#443519",
 };
 
 export const appTheme: MD3Theme = {
@@ -36,6 +42,11 @@ export const appTheme: MD3Theme = {
     errorContainer: colors.dangerSoft,
   },
 };
+
+export function createAppTheme(palette: AppColors, dark = false): MD3Theme {
+  const base = dark ? MD3DarkTheme : MD3LightTheme;
+  return { ...base, roundness: 4, colors: { ...base.colors, primary: palette.primary, onPrimary: dark ? "#0D2017" : "#FFFFFF", primaryContainer: palette.primarySoft, onPrimaryContainer: palette.ink, secondary: palette.accent, background: palette.canvas, surface: palette.surface, surfaceVariant: palette.primarySoft, onSurface: palette.ink, onSurfaceVariant: palette.muted, outline: palette.muted, outlineVariant: palette.line, error: palette.danger, errorContainer: palette.dangerSoft } };
+}
 
 export const categoryColors: Record<string, string> = {
   Personal: "#1D6B4F",

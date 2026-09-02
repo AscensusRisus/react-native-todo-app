@@ -4,7 +4,7 @@ import { useEffect } from "react";
 import { PaperProvider } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
-import { appTheme, colors } from "@/lib/theme";
+import { AppThemeProvider, useAppTheme } from "@/lib/app-theme-context";
 
 
 function RouteGuard({ children }: { children: React.ReactNode }) {
@@ -24,12 +24,12 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-export default function RootLayout() {
+function ThemedRootLayout() {
+  const { theme, colors, isDark } = useAppTheme();
   return (
-    <AuthProvider>
-      <PaperProvider theme={appTheme}>
+      <PaperProvider theme={theme}>
         <SafeAreaProvider>
-         <StatusBar style="dark" backgroundColor={colors.canvas} />
+         <StatusBar style={isDark ? "light" : "dark"} backgroundColor={colors.canvas} />
          <RouteGuard>
             <Stack screenOptions={{ contentStyle: { backgroundColor: colors.canvas } }}>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
@@ -39,6 +39,7 @@ export default function RootLayout() {
           </RouteGuard>
         </SafeAreaProvider>
       </PaperProvider>
-    </AuthProvider>
   );
 }
+
+export default function RootLayout() { return <AuthProvider><AppThemeProvider><ThemedRootLayout /></AppThemeProvider></AuthProvider>; }
