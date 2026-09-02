@@ -1,8 +1,11 @@
 appId: host.exp.exponent
 ---
-# The app must already be signed in; this flow verifies the authenticated Focus screen.
+# The app must already be signed in and opened to the Focus route.
+- openLink: "exp://localhost:8081"
+- waitForAnimationToEnd
 - tapOn:
     text: "Focus"
+- waitForAnimationToEnd
 - assertVisible: "FOCUS ON ONE THING"
 - assertVisible: "Focus"
 - assertVisible: "Focus · 25 min"
