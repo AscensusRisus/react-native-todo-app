@@ -2,11 +2,14 @@ import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Button, Menu, Surface, Text } from "react-native-paper";
 import type { Task } from "@/lib/habits";
-import { categoryColors, colors } from "@/lib/theme";
+import { categoryColors } from "@/lib/theme";
+import { useAppTheme } from "@/lib/app-theme-context";
 
 type Props = { tasks: Task[]; selectedTaskId: string | null; onSelect: (taskId: string | null) => void; disabled?: boolean; allowNoTask?: boolean };
 
 export function TaskPicker({ tasks, selectedTaskId, onSelect, disabled = false, allowNoTask = false }: Props) {
+  const { colors } = useAppTheme();
+  const styles = makeStyles(colors);
   const selected = tasks.find((task) => task.id === selectedTaskId) ?? null;
   return <Surface style={[styles.card, disabled && styles.disabled]} elevation={0}>
     <View style={[styles.accent, { backgroundColor: selected ? (categoryColors[selected.category] ?? colors.primary) : colors.line }]} />
@@ -27,7 +30,7 @@ function TaskMenu({ tasks, selectedTaskId, onSelect, disabled, allowNoTask }: Pr
   </Menu>;
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: { ink: string; muted: string; surface: string; line: string; primary: string }) => StyleSheet.create({
   card: { flexDirection: "row", alignItems: "center", minHeight: 98, backgroundColor: colors.surface, borderColor: colors.line, borderWidth: 1, borderRadius: 18, overflow: "hidden" },
   disabled: { opacity: 0.72 }, accent: { width: 5, alignSelf: "stretch" }, copy: { flex: 1, padding: 15 }, label: { color: colors.muted, fontWeight: "800", letterSpacing: 0.9, fontSize: 10 }, title: { color: colors.ink, fontWeight: "800", marginTop: 3 }, note: { color: colors.muted, fontSize: 12, marginTop: 3, lineHeight: 17 },
 });

@@ -2,7 +2,8 @@ import { useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { Button, Chip, SegmentedButtons, Surface, Text, TextInput } from "react-native-paper";
 import { categories, dateAfter, defaultTaskDraft, todayKey, validateTaskDraft, type TaskDraft, type TaskSchedule } from "@/lib/task-domain";
-import { categoryColors, colors } from "@/lib/theme";
+import { categoryColors } from "@/lib/theme";
+import { useAppTheme } from "@/lib/app-theme-context";
 
 type Props = {
   initialValue?: TaskDraft;
@@ -12,6 +13,8 @@ type Props = {
 };
 
 export function TaskForm({ initialValue = defaultTaskDraft, onSubmit, submitLabel, autoFocus = false }: Props) {
+  const { colors } = useAppTheme();
+  const styles = makeStyles(colors);
   const [task, setTask] = useState<TaskDraft>(initialValue);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
@@ -57,6 +60,6 @@ export function TaskForm({ initialValue = defaultTaskDraft, onSubmit, submitLabe
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: { muted: string; surface: string; line: string; danger: string }) => StyleSheet.create({
   form: { backgroundColor: colors.surface, padding: 18, borderRadius: 22, borderWidth: 1, borderColor: colors.line }, input: { marginBottom: 14, backgroundColor: colors.surface }, label: { color: colors.muted, letterSpacing: 0.9, fontSize: 11, marginTop: 8, marginBottom: 10 }, chips: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginBottom: 12 }, save: { marginTop: 24 }, buttonContent: { height: 50 }, error: { color: colors.danger, marginTop: 14 },
 });

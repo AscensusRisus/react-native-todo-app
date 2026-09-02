@@ -3,7 +3,8 @@ import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { IconButton, Menu, Surface, Text } from "react-native-paper";
 import { scheduleLabel, streakFor, type Task } from "@/lib/habits";
-import { categoryColors, colors } from "@/lib/theme";
+import { categoryColors } from "@/lib/theme";
+import { useAppTheme } from "@/lib/app-theme-context";
 
 type TaskCardProps = {
   task: Task;
@@ -16,6 +17,8 @@ type TaskCardProps = {
 
 export function TaskCard({ task, today, onToggle, onEdit, onDelete, onStartFocus }: TaskCardProps) {
   const [menuVisible, setMenuVisible] = useState(false);
+  const { colors } = useAppTheme();
+  const styles = makeStyles(colors);
   const done = task.completions.includes(today);
   const accent = categoryColors[task.category ?? "Personal"] ?? colors.primary;
   const priorityLabel = task.priority === "high" ? "High priority" : task.priority === "low" ? "Low priority" : "Normal priority";
@@ -55,9 +58,9 @@ export function TaskCard({ task, today, onToggle, onEdit, onDelete, onStartFocus
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: { ink: string; muted: string; surface: string; line: string; primary: string; danger: string }) => StyleSheet.create({
   card: { minHeight: 90, flexDirection: "row", alignItems: "stretch", backgroundColor: colors.surface, borderRadius: 18, borderWidth: 1, borderColor: colors.line, overflow: "hidden", marginBottom: 10 },
-  cardDone: { opacity: 0.72, backgroundColor: "#F8FAF7" },
+  cardDone: { opacity: 0.72, backgroundColor: colors.surface },
   accent: { width: 5 },
   pressable: { flex: 1, flexDirection: "row", alignItems: "center", paddingVertical: 15, paddingLeft: 14 },
   check: { width: 30, height: 30, alignItems: "center", justifyContent: "center", marginRight: 10 },
@@ -70,5 +73,5 @@ const styles = StyleSheet.create({
   category: { fontSize: 12, fontWeight: "800" },
   meta: { fontSize: 12, color: colors.muted },
   highPriority: { color: colors.danger, fontWeight: "700" },
-  dot: { color: "#ABB4AE", marginHorizontal: 6 },
+  dot: { color: colors.muted, marginHorizontal: 6 },
 });
