@@ -19,12 +19,12 @@ export function FocusTimer({ timer, remaining, selectedKind, onSelectKind, onSta
     <View style={styles.presets} accessibilityRole="radiogroup" accessibilityLabel="Interval type">
       {(["focus", "shortBreak", "longBreak"] as IntervalKind[]).map((kind) => <Button key={kind} compact mode={activeKind === kind ? "contained" : "text"} disabled={!!timer || disabled} onPress={() => onSelectKind(kind)} contentStyle={styles.presetContent} labelStyle={styles.presetLabel}>{labelFor(kind)}{!timer && ` · ${durationLabel(kind)}`}</Button>)}
     </View>
-    <Text accessibilityLiveRegion="polite" accessibilityLabel={`${labelFor(activeKind)} timer, ${minutes} minutes ${remainder} seconds remaining`} style={styles.countdown}>{minutes}:{remainder}</Text>
+    <Text accessibilityLabel={`${labelFor(activeKind)} timer, ${minutes} minutes ${remainder} seconds remaining`} style={styles.countdown}>{minutes}:{remainder}</Text>
     <Text style={styles.kind}>{labelFor(activeKind).toUpperCase()}</Text>
     <ProgressBar progress={progress} color={colors.primary} style={styles.progress} />
     <View style={styles.controls}>
       {!timer ? <Button mode="contained" icon="play" disabled={disabled} onPress={onStart} style={styles.primary}>Start {labelFor(selectedKind).toLowerCase()}</Button> : running ? <Button mode="contained" icon="pause" onPress={onPause} style={styles.primary}>Pause</Button> : <Button mode="contained" icon="play" onPress={onResume} style={styles.primary}>Resume</Button>}
-      {!!timer && <Button mode="outlined" icon="stop" onPress={onEnd}>End</Button>}
+      {!!timer && <Button mode="outlined" icon={running ? "stop" : "refresh"} onPress={onEnd}>{running ? "End" : "Reset"}</Button>}
     </View>
   </Surface>;
 }

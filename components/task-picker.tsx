@@ -4,25 +4,25 @@ import { Button, Menu, Surface, Text } from "react-native-paper";
 import type { Task } from "@/lib/habits";
 import { categoryColors, colors } from "@/lib/theme";
 
-type Props = { tasks: Task[]; selectedTaskId: string | null; onSelect: (taskId: string | null) => void; disabled?: boolean };
+type Props = { tasks: Task[]; selectedTaskId: string | null; onSelect: (taskId: string | null) => void; disabled?: boolean; allowNoTask?: boolean };
 
-export function TaskPicker({ tasks, selectedTaskId, onSelect, disabled = false }: Props) {
+export function TaskPicker({ tasks, selectedTaskId, onSelect, disabled = false, allowNoTask = false }: Props) {
   const selected = tasks.find((task) => task.id === selectedTaskId) ?? null;
   return <Surface style={[styles.card, disabled && styles.disabled]} elevation={0}>
     <View style={[styles.accent, { backgroundColor: selected ? (categoryColors[selected.category] ?? colors.primary) : colors.line }]} />
     <View style={styles.copy}>
       <Text style={styles.label}>LINKED TASK</Text>
       <Text variant="titleMedium" style={styles.title}>{selected?.title ?? "Choose a task"}</Text>
-      <Text style={styles.note}>{selected ? `${selected.category} · Focus will be recorded without completing it.` : "A task is required for a focus round."}</Text>
+      <Text style={styles.note}>{selected ? `${selected.category} · Focus will be recorded without completing it.` : allowNoTask ? "Breaks do not need a linked task." : "A task is required for a focus round."}</Text>
     </View>
-    <TaskMenu tasks={tasks} selectedTaskId={selectedTaskId} onSelect={onSelect} disabled={disabled} />
+    <TaskMenu tasks={tasks} selectedTaskId={selectedTaskId} onSelect={onSelect} disabled={disabled} allowNoTask={allowNoTask} />
   </Surface>;
 }
 
-function TaskMenu({ tasks, selectedTaskId, onSelect, disabled }: Props) {
+function TaskMenu({ tasks, selectedTaskId, onSelect, disabled, allowNoTask }: Props) {
   const [visible, setVisible] = useState(false);
   return <Menu visible={visible} onDismiss={() => setVisible(false)} anchor={<Button compact mode="text" disabled={disabled || !tasks.length} onPress={() => setVisible(true)}>{selectedTaskId ? "Change" : "Select"}</Button>}>
-    {selectedTaskId && <Menu.Item title="No task (break)" onPress={() => { setVisible(false); onSelect(null); }} />}
+    {(selectedTaskId || allowNoTask) && <Menu.Item title="No task (break)" onPress={() => { setVisible(false); onSelect(null); }} />}
     {tasks.map((task) => <Menu.Item key={task.id} title={task.title} leadingIcon={task.id === selectedTaskId ? "check" : "circle-outline"} onPress={() => { setVisible(false); onSelect(task.id); }} />)}
   </Menu>;
 }

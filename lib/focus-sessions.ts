@@ -1,8 +1,17 @@
 import { collection, doc, onSnapshot, orderBy, query, serverTimestamp, setDoc, Timestamp } from "firebase/firestore";
 import { db, firebaseSetupError } from "./firebase";
-import type { FocusSessionDraft, IntervalKind } from "./focus-domain";
+import { focusSessionPayload, type FocusSessionDraft, type IntervalKind } from "./focus-domain";
 
 export type FocusSession = Omit<FocusSessionDraft, "id" | "startedAtMs" | "endedAtMs"> & { id: string };
+
+export function focusSessionFields(session: FocusSessionDraft) {
+  const payload = focusSessionPayload(session);
+  return {
+    taskId: payload.taskId, taskTitleSnapshot: payload.taskTitleSnapshot, intention: payload.intention,
+    kind: payload.kind, status: payload.status, plannedSeconds: payload.plannedSeconds, focusedSeconds: payload.focusedSeconds,
+    localDate: payload.localDate, startedAt: Timestamp.fromMillis(payload.startedAtMs), endedAt: Timestamp.fromMillis(payload.endedAtMs), createdAt: serverTimestamp(),
+  };
+}
 
 function sessionsCollection(userId: string) {
   if (!db) throw new Error(firebaseSetupError ?? "Firebase is unavailable.");
@@ -23,11 +32,7 @@ function fromSnapshot(id: string, data: Record<string, unknown>): FocusSession |
 
 export async function saveFocusSession(userId: string, session: FocusSessionDraft) {
   const ref = doc(sessionsCollection(userId), session.id);
-  await setDoc(ref, {
-    taskId: session.taskId, taskTitleSnapshot: session.taskTitleSnapshot, intention: session.intention,
-    kind: session.kind, status: session.status, plannedSeconds: session.plannedSeconds, focusedSeconds: session.focusedSeconds,
-    localDate: session.localDate, startedAt: Timestamp.fromMillis(session.startedAtMs), endedAt: Timestamp.fromMillis(session.endedAtMs), createdAt: serverTimestamp(),
-  });
+  await setDoc(ref, focusSessionFields(session));
 }
 
 export function subscribeToFocusSessions(userId: string, onChange: (sessions: FocusSession[]) => void, onError: (message: string) => void) {

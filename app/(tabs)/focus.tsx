@@ -1,5 +1,5 @@
-import { useLocalSearchParams, useRouter } from "expo-router";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Alert, StyleSheet } from "react-native";
 import { Button, HelperText, Surface, Text, TextInput } from "react-native-paper";
 import { AppScreen } from "@/components/app-screen";
@@ -19,7 +19,7 @@ export default function FocusScreen() {
   const router = useRouter();
   const { tasks, loading, error: tasksError } = useTasks(user?.uid);
   const { summary, error: sessionsError } = useFocusSessions(user?.uid);
-  const { timer, remainingSeconds, finishedTimer, pendingCount, syncError, restoring, start, pause, resume, end, unlinkTask, dismissFinished } = useFocusTimer(user?.uid);
+  const { timer, remainingSeconds, finishedTimer, pendingCount, pendingSessions, syncError, restoring, start, pause, resume, end, unlinkTask, dismissFinished, retryPending } = useFocusTimer(user?.uid);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [kind, setKind] = useState<IntervalKind>("focus");
   const [intention, setIntention] = useState("");
@@ -31,10 +31,16 @@ export default function FocusScreen() {
   const finishedTask = finishedTimer?.taskId ? tasks.find((task) => task.id === finishedTimer.taskId) ?? null : null;
   const timerTaskMissing = !!timer?.taskId && !activeTask;
   const timerTaskDone = !!activeTask?.completions.includes(todayKey());
+  const displayedSummary = useMemo(() => {
+    const pendingFocus = pendingSessions.filter((session) => session.localDate === todayKey() && session.status === "completed" && session.kind === "focus");
+    return { rounds: summary.rounds + pendingFocus.length, focusedMinutes: summary.focusedMinutes + Math.floor(pendingFocus.reduce((total, session) => total + session.focusedSeconds, 0) / 60) };
+  }, [pendingSessions, summary]);
 
   useEffect(() => {
     if (timer?.taskId && !loading && !activeTask) void unlinkTask(timer.taskId);
   }, [activeTask, loading, timer?.taskId, unlinkTask]);
+
+  useFocusEffect(useCallback(() => { void retryPending(); }, [retryPending]));
 
   useEffect(() => {
     if (!routeTaskId || routeTaskId === handledRouteTaskId.current || timer) return;
@@ -74,11 +80,11 @@ export default function FocusScreen() {
   return <AppScreen>
     <Text style={styles.eyebrow}>FOCUS ON ONE THING</Text>
     <Text variant="headlineMedium" style={styles.heading}>Focus</Text>
-    <Text style={styles.summary}>{summary.rounds} {summary.rounds === 1 ? "round" : "rounds"} · {summary.focusedMinutes} focused minutes</Text>
+    <Text style={styles.summary}>{displayedSummary.rounds} {displayedSummary.rounds === 1 ? "round" : "rounds"} · {displayedSummary.focusedMinutes} focused minutes</Text>
     {(pendingCount > 0 || syncError) && <Surface style={styles.sync} elevation={0}><Text style={styles.syncText}>Waiting to sync {pendingCount === 1 ? "1 session" : `${pendingCount} sessions`}. Your timer data is safe on this device.</Text></Surface>}
     {!!displayTaskTitle && <Surface style={styles.activeTask} elevation={0}><Text style={styles.activeTaskLabel}>FOCUSING ON</Text><Text variant="titleMedium" style={styles.activeTaskTitle}>{displayTaskTitle}{timerTaskDone ? " · completed" : ""}</Text>{timerTaskMissing && <Text style={styles.warning}>This task was deleted. The interval can finish, but choose another task for your next focus round.</Text>}</Surface>}
     {!timer && <>
-      <TaskPicker tasks={openTodayTasks} selectedTaskId={selectedTaskId} onSelect={setSelectedTaskId} disabled={restoring} />
+      <TaskPicker tasks={openTodayTasks} selectedTaskId={selectedTaskId} onSelect={setSelectedTaskId} disabled={restoring} allowNoTask={kind !== "focus"} />
       {!openTodayTasks.length && !loading && <Surface style={styles.empty} elevation={0}><Text variant="titleMedium" style={styles.emptyTitle}>A task makes focus rounds useful</Text><Text style={styles.emptyCopy}>Add a task for today to begin a focus round. Breaks are still available.</Text><Button mode="outlined" onPress={() => router.navigate("/add-habit")}>Add task</Button></Surface>}
       <TextInput label="Focus intention (optional)" value={intention} onChangeText={(value) => setIntention(value.slice(0, 120))} maxLength={120} mode="outlined" style={styles.input} dense placeholder="Draft the opening section" />
       <HelperText type="info" visible>{intention.length}/120</HelperText>

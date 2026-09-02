@@ -88,6 +88,14 @@ export function interruptedSession(timer: ActiveTimer, endedAtMs: number): Focus
   };
 }
 
+export function focusSessionPayload(session: FocusSessionDraft) {
+  return {
+    taskId: session.taskId, taskTitleSnapshot: session.taskTitleSnapshot, intention: session.intention,
+    kind: session.kind, status: session.status, plannedSeconds: session.plannedSeconds, focusedSeconds: session.focusedSeconds,
+    localDate: session.localDate, startedAtMs: session.startedAtMs, endedAtMs: session.endedAtMs,
+  };
+}
+
 const isKind = (value: unknown): value is IntervalKind => value === "focus" || value === "shortBreak" || value === "longBreak";
 
 export function validateStoredTimer(value: unknown): ActiveTimer | null {
