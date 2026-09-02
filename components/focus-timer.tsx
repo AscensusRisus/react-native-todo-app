@@ -1,23 +1,21 @@
 import { StyleSheet, View } from "react-native";
 import { Button, ProgressBar, Surface, Text } from "react-native-paper";
 import type { ActiveTimer, IntervalKind } from "@/lib/focus-domain";
-import { durationFor } from "@/lib/focus-domain";
 import { colors } from "@/lib/theme";
 
-type Props = { timer: ActiveTimer | null; remaining: number | null; selectedKind: IntervalKind; onSelectKind: (kind: IntervalKind) => void; onStart: () => void; onPause: () => void; onResume: () => void; onEnd: () => void; disabled?: boolean };
+type Props = { timer: ActiveTimer | null; remaining: number | null; selectedKind: IntervalKind; durations: Record<IntervalKind, number>; onSelectKind: (kind: IntervalKind) => void; onStart: () => void; onPause: () => void; onResume: () => void; onEnd: () => void; disabled?: boolean };
 const labelFor = (kind: IntervalKind) => kind === "focus" ? "Focus" : kind === "shortBreak" ? "Short break" : "Long break";
-const durationLabel = (kind: IntervalKind) => `${Math.round(durationFor(kind) / 60)} min`;
 
-export function FocusTimer({ timer, remaining, selectedKind, onSelectKind, onStart, onPause, onResume, onEnd, disabled }: Props) {
+export function FocusTimer({ timer, remaining, selectedKind, durations, onSelectKind, onStart, onPause, onResume, onEnd, disabled }: Props) {
   const activeKind = timer?.kind ?? selectedKind;
-  const seconds = remaining ?? durationFor(selectedKind);
+  const seconds = remaining ?? durations[selectedKind];
   const minutes = String(Math.floor(seconds / 60)).padStart(2, "0");
   const remainder = String(seconds % 60).padStart(2, "0");
-  const progress = Math.max(0, Math.min(1, 1 - seconds / (timer?.durationSeconds ?? durationFor(selectedKind))));
+  const progress = Math.max(0, Math.min(1, 1 - seconds / (timer?.durationSeconds ?? durations[selectedKind])));
   const running = timer?.phase === "running";
   return <Surface style={styles.card} elevation={0}>
     <View style={styles.presets} accessibilityRole="radiogroup" accessibilityLabel="Interval type">
-      {(["focus", "shortBreak", "longBreak"] as IntervalKind[]).map((kind) => <Button key={kind} compact mode={activeKind === kind ? "contained" : "text"} disabled={!!timer || disabled} onPress={() => onSelectKind(kind)} contentStyle={styles.presetContent} labelStyle={styles.presetLabel}>{labelFor(kind)}{!timer && ` · ${durationLabel(kind)}`}</Button>)}
+      {(["focus", "shortBreak", "longBreak"] as IntervalKind[]).map((kind) => <Button key={kind} compact mode={activeKind === kind ? "contained" : "text"} disabled={!!timer || disabled} onPress={() => onSelectKind(kind)} contentStyle={styles.presetContent} labelStyle={styles.presetLabel}>{labelFor(kind)}{!timer && ` · ${Math.round(durations[kind] / 60)} min`}</Button>)}
     </View>
     <Text accessibilityLabel={`${labelFor(activeKind)} timer, ${minutes} minutes ${remainder} seconds remaining`} style={styles.countdown}>{minutes}:{remainder}</Text>
     <Text style={styles.kind}>{labelFor(activeKind).toUpperCase()}</Text>

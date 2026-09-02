@@ -1,4 +1,5 @@
 import { dateKey } from "./task-domain";
+import type { AlertSound } from "./focus-preferences";
 
 export type IntervalKind = "focus" | "shortBreak" | "longBreak";
 export type TimerPhase = "idle" | "running" | "paused" | "finished";
@@ -11,6 +12,7 @@ export type ActiveTimer = {
   taskId: string | null;
   taskTitleSnapshot: string | null;
   intention: string;
+  alertSound: AlertSound | null;
   durationSeconds: number;
   startedAtMs: number;
   deadlineAtMs: number | null;
@@ -106,6 +108,8 @@ export function validateStoredTimer(value: unknown): ActiveTimer | null {
   if (typeof item.durationSeconds !== "number" || !Number.isInteger(item.durationSeconds) || item.durationSeconds < 1 || item.durationSeconds > 14_400) return null;
   if (typeof item.startedAtMs !== "number" || !Number.isFinite(item.startedAtMs)) return null;
   if (!(item.taskId === null || typeof item.taskId === "string") || !(item.taskTitleSnapshot === null || typeof item.taskTitleSnapshot === "string") || typeof item.intention !== "string" || item.intention.length > 120) return null;
+  const alertSound = item.alertSound;
+  if (!(alertSound === null || (typeof alertSound === "object" && alertSound !== null && typeof (alertSound as Record<string, unknown>).uri === "string" && typeof (alertSound as Record<string, unknown>).name === "string" && (((alertSound as Record<string, unknown>).mimeType === null) || typeof (alertSound as Record<string, unknown>).mimeType === "string")))) return null;
   if (item.phase === "running" && (typeof item.deadlineAtMs !== "number" || !Number.isFinite(item.deadlineAtMs) || item.remainingWhenPausedSeconds !== null)) return null;
   if (item.phase === "paused" && (item.deadlineAtMs !== null || typeof item.remainingWhenPausedSeconds !== "number" || !Number.isInteger(item.remainingWhenPausedSeconds) || item.remainingWhenPausedSeconds < 0 || item.remainingWhenPausedSeconds > item.durationSeconds)) return null;
   return item as ActiveTimer;

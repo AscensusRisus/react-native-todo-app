@@ -1,6 +1,6 @@
 import { completedSession, durationFor, focusSessionPayload, focusedSecondsForInterruptedTimer, interruptedSession, isTimerFinished, pauseTimer, remainingSeconds, resumeTimer, todayFocusSummary, validateStoredTimer } from "../lib/focus-domain";
 
-const running = (overrides = {}) => ({ version: 1, ownerUid: "user-1", intervalId: "interval-1", kind: "focus", taskId: "task-1", taskTitleSnapshot: "Draft", intention: "Opening", durationSeconds: 1500, startedAtMs: 1_000, deadlineAtMs: 1_501_000, remainingWhenPausedSeconds: null, phase: "running", ...overrides });
+const running = (overrides = {}) => ({ version: 1, ownerUid: "user-1", intervalId: "interval-1", kind: "focus", taskId: "task-1", taskTitleSnapshot: "Draft", intention: "Opening", alertSound: null, durationSeconds: 1500, startedAtMs: 1_000, deadlineAtMs: 1_501_000, remainingWhenPausedSeconds: null, phase: "running", ...overrides });
 
 describe("focus timer domain", () => {
   it("uses the expected presets and timestamp-based countdown", () => {
@@ -29,6 +29,7 @@ describe("focus timer domain", () => {
     expect(validateStoredTimer({ ...running(), version: 2 })).toBeNull();
     expect(validateStoredTimer({ ...running(), ownerUid: "" })).toBeNull();
     expect(validateStoredTimer({ ...running(), intention: "x".repeat(121) })).toBeNull();
+    expect(validateStoredTimer({ ...running(), alertSound: { uri: 4, name: "bad", mimeType: null } })).toBeNull();
   });
 
   it("only preserves interrupted focus after one minute", () => {
