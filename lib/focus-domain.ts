@@ -109,10 +109,10 @@ export function validateStoredTimer(value: unknown): ActiveTimer | null {
   if (typeof item.startedAtMs !== "number" || !Number.isFinite(item.startedAtMs)) return null;
   if (!(item.taskId === null || typeof item.taskId === "string") || !(item.taskTitleSnapshot === null || typeof item.taskTitleSnapshot === "string") || typeof item.intention !== "string" || item.intention.length > 120) return null;
   const alertSound = item.alertSound;
-  if (!(alertSound === null || (typeof alertSound === "object" && alertSound !== null && typeof (alertSound as Record<string, unknown>).uri === "string" && typeof (alertSound as Record<string, unknown>).name === "string" && (((alertSound as Record<string, unknown>).mimeType === null) || typeof (alertSound as Record<string, unknown>).mimeType === "string")))) return null;
+  if (!(alertSound === undefined || alertSound === null || (typeof alertSound === "object" && alertSound !== null && typeof (alertSound as Record<string, unknown>).uri === "string" && typeof (alertSound as Record<string, unknown>).name === "string" && (((alertSound as Record<string, unknown>).mimeType === null) || typeof (alertSound as Record<string, unknown>).mimeType === "string")))) return null;
   if (item.phase === "running" && (typeof item.deadlineAtMs !== "number" || !Number.isFinite(item.deadlineAtMs) || item.remainingWhenPausedSeconds !== null)) return null;
   if (item.phase === "paused" && (item.deadlineAtMs !== null || typeof item.remainingWhenPausedSeconds !== "number" || !Number.isInteger(item.remainingWhenPausedSeconds) || item.remainingWhenPausedSeconds < 0 || item.remainingWhenPausedSeconds > item.durationSeconds)) return null;
-  return item as ActiveTimer;
+  return { ...item, alertSound: alertSound ?? null } as ActiveTimer;
 }
 
 export function todayFocusSummary(sessions: FocusSessionDraft[], localDate: string) {

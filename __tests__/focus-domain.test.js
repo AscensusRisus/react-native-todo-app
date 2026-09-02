@@ -30,6 +30,8 @@ describe("focus timer domain", () => {
     expect(validateStoredTimer({ ...running(), ownerUid: "" })).toBeNull();
     expect(validateStoredTimer({ ...running(), intention: "x".repeat(121) })).toBeNull();
     expect(validateStoredTimer({ ...running(), alertSound: { uri: 4, name: "bad", mimeType: null } })).toBeNull();
+    const { alertSound, ...legacyTimer } = running();
+    expect(validateStoredTimer(legacyTimer)).toMatchObject({ alertSound: null });
   });
 
   it("only preserves interrupted focus after one minute", () => {
