@@ -1,0 +1,11 @@
+appId: host.exp.exponent
+---
+# The app must already be signed in; this flow verifies the authenticated Focus screen.
+- tapOn:
+    text: "Focus"
+- assertVisible: "FOCUS ON ONE THING"
+- assertVisible: "Focus"
+- assertVisible: "Focus · 25 min"
+- assertVisible: "Short break · 5 min"
+- assertVisible: "Long break · 15 min"
+- assertVisible: "Choose sound"
