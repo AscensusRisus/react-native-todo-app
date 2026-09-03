@@ -3,13 +3,10 @@ import { StyleSheet, View } from "react-native";
 import { ActivityIndicator, Surface, Text } from "react-native-paper";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { AppScreen } from "@/components/app-screen";
-import { LatestActivity } from "@/components/latest-activity";
 import { TaskCalendar } from "@/components/task-calendar";
 import { useFocusSessions } from "@/hooks/use-focus-sessions";
 import { useTasks } from "@/hooks/use-tasks";
 import { useAuth } from "@/lib/auth-context";
-import { lastSevenDays, longestStreak, streakFor } from "@/lib/habits";
-import { categoryColors } from "@/lib/theme";
 import { useAppTheme } from "@/lib/app-theme-context";
 
 export default function ProgressScreen() {
@@ -17,13 +14,11 @@ export default function ProgressScreen() {
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const { tasks: habits, loading, error } = useTasks(user?.uid);
-  const { sessions, summary: focusSummary } = useFocusSessions(user?.uid);
+  const { summary: focusSummary } = useFocusSessions(user?.uid);
 
   const summary = useMemo(() => {
     const total = habits.reduce((sum, task) => sum + task.completions.length, 0);
-    const best = Math.max(0, ...habits.map((task) => longestStreak(task.completions)));
-    const active = habits.filter((task) => streakFor(task.completions) > 0).length;
-    return { total, best, active };
+    return { total };
   }, [habits]);
 
   return (
@@ -35,13 +30,15 @@ export default function ProgressScreen() {
       <View style={styles.stats}>
         <Surface style={styles.stat} elevation={0}><MaterialCommunityIcons name="check-decagram-outline" size={24} color={colors.primary} /><Text variant="headlineSmall" style={styles.statNumber}>{summary.total}</Text><Text style={styles.statLabel}>check-ins</Text></Surface>
         <Surface style={styles.stat} elevation={0}><MaterialCommunityIcons name="timer-outline" size={24} color={colors.accent} /><Text variant="headlineSmall" style={styles.statNumber}>{focusSummary.focusedMinutes}</Text><Text style={styles.statLabel}>focus minutes today</Text></Surface>
-        <Surface style={styles.stat} elevation={0}><MaterialCommunityIcons name="fire" size={24} color="#7656A5" /><Text variant="headlineSmall" style={styles.statNumber}>{summary.best}</Text><Text style={styles.statLabel}>best streak</Text></Surface>
+
       </View>
 
       <Text variant="titleLarge" style={styles.section}>Plan and activity</Text>
       {loading ? <ActivityIndicator style={styles.loader} /> : error ? <Text style={styles.error}>{error}</Text> : habits.length === 0 ? (
-        <><TaskCalendar tasks={habits} /><LatestActivity tasks={habits} sessions={sessions} /><Surface style={styles.empty} elevation={0}><Text variant="titleMedium" style={styles.taskTitle}>Your calendar is ready</Text><Text style={styles.muted}>Add a task to see its schedule and activity here.</Text></Surface></>
-      ) : <><TaskCalendar tasks={habits} /><LatestActivity tasks={habits} sessions={sessions} />{habits.map((task) => {
+        <><TaskCalendar tasks={habits} /><Surface style={styles.empty} elevation={0}><Text variant="titleMedium" style={styles.taskTitle}>Your calendar is ready</Text><Text style={styles.muted}>Add a task to see its schedule and activity here.</Text></Surface></>
+      ) : <TaskCalendar tasks={habits} />}
+      {/* Detailed streak cards are intentionally omitted until recurring schedules are reflected in streak calculations. */}
+      {/* {habits.map((task) => {
         const accent = categoryColors[task.category ?? "Personal"] ?? colors.primary;
         return (
           <Surface key={task.id} style={styles.card} elevation={0}>
@@ -50,7 +47,7 @@ export default function ProgressScreen() {
             <Text style={styles.best}>Personal best: {longestStreak(task.completions)} days · {task.completions.length} total check-ins</Text>
           </Surface>
         );
-      })}</>}
+      })} */}
     </AppScreen>
   );
 }

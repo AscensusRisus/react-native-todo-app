@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { IconButton, Menu, Surface, Text } from "react-native-paper";
-import { scheduleLabel, streakFor, type Task } from "@/lib/habits";
+import { scheduleLabel, type Task } from "@/lib/habits";
 import { categoryColors } from "@/lib/theme";
 import { useAppTheme } from "@/lib/app-theme-context";
 
@@ -22,7 +22,6 @@ export function TaskCard({ task, today, onToggle, onEdit, onDelete, onStartFocus
   const done = task.completions.includes(today);
   const accent = categoryColors[task.category ?? "Personal"] ?? colors.primary;
   const priorityLabel = task.priority === "high" ? "High priority" : task.priority === "low" ? "Low priority" : "Normal priority";
-  const streak = streakFor(task.completions);
 
   return (
     <Surface style={[styles.card, done && styles.cardDone]} elevation={0}>
@@ -40,7 +39,6 @@ export function TaskCard({ task, today, onToggle, onEdit, onDelete, onStartFocus
             <Text style={[styles.meta, task.priority === "high" && styles.highPriority]}>{priorityLabel}</Text>
             <Text style={styles.dot}>•</Text>
             <Text style={styles.meta}>{scheduleLabel(task.schedule)}</Text>
-            {streak > 1 && <><Text style={styles.dot}>•</Text><Text style={styles.meta}>🔥 {streak} days</Text></>}
           </View>
         </View>
       </Pressable>
