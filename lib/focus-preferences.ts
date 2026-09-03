@@ -1,7 +1,7 @@
 import type { IntervalKind } from "./focus-domain";
 
 export type IntervalDurations = Record<IntervalKind, number>;
-export type AlertSound = { uri: string; name: string; mimeType: string | null };
+export type AlertSound = { uri: string; name: string; mimeType: string | null; source?: "system" | "file" };
 export type FocusPreferences = {
   version: 1;
   ownerUid: string;
@@ -30,7 +30,7 @@ export function validateFocusPreferences(value: unknown, ownerUid: string): Focu
   const durations = item.durations as Record<string, unknown>;
   if (!isValidDuration("focus", durations.focus) || !isValidDuration("shortBreak", durations.shortBreak) || !isValidDuration("longBreak", durations.longBreak)) return null;
   const sound = item.alertSound;
-  if (sound !== null && (!sound || typeof sound !== "object" || typeof (sound as Record<string, unknown>).uri !== "string" || typeof (sound as Record<string, unknown>).name !== "string" || !((sound as Record<string, unknown>).mimeType === null || typeof (sound as Record<string, unknown>).mimeType === "string"))) return null;
+  if (sound !== null && (!sound || typeof sound !== "object" || typeof (sound as Record<string, unknown>).uri !== "string" || typeof (sound as Record<string, unknown>).name !== "string" || !((sound as Record<string, unknown>).mimeType === null || typeof (sound as Record<string, unknown>).mimeType === "string") || !((sound as Record<string, unknown>).source === undefined || (sound as Record<string, unknown>).source === "system" || (sound as Record<string, unknown>).source === "file"))) return null;
   return item as FocusPreferences;
 }
 

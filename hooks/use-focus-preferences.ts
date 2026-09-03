@@ -1,7 +1,9 @@
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
+import * as IntentLauncher from "expo-intent-launcher";
 import { useCallback, useEffect, useState } from "react";
+import { Platform } from "react-native";
 import type { IntervalKind } from "@/lib/focus-domain";
 import { DEFAULT_INTERVAL_DURATIONS, FOCUS_PREFERENCES_STORAGE_KEY, isValidDuration, type AlertSound, type FocusPreferences, validateFocusPreferences } from "@/lib/focus-preferences";
 
@@ -47,6 +49,26 @@ export function useFocusPreferences(userId?: string) {
   const chooseAlertSound = useCallback(async () => {
     if (!preferences) return null;
     setError(null);
+    if (Platform.OS === "android") {
+      try {
+        const result = await IntentLauncher.startActivityAsync("android.intent.action.RINGTONE_PICKER", {
+          extra: {
+            "android.intent.extra.ringtone.TYPE": 2,
+            "android.intent.extra.ringtone.SHOW_DEFAULT": true,
+            "android.intent.extra.ringtone.SHOW_SILENT": false,
+          },
+        });
+        const picked = result.extra as { "android.intent.extra.ringtone.PICKED_URI"?: unknown } | undefined;
+        const uri = typeof result.data === "string" ? result.data : typeof picked?.["android.intent.extra.ringtone.PICKED_URI"] === "string" ? picked["android.intent.extra.ringtone.PICKED_URI"] : null;
+        if (result.resultCode !== IntentLauncher.ResultCode.Success || !uri) return null;
+        const alertSound: AlertSound = { uri, name: "System notification sound", mimeType: null, source: "system" };
+        await persist({ ...preferences, alertSound });
+        return alertSound;
+      } catch (cause) {
+        setError(cause instanceof Error ? cause.message : "Could not open the system sound picker.");
+        return null;
+      }
+    }
     const result = await DocumentPicker.getDocumentAsync({ type: "audio/*", copyToCacheDirectory: true, multiple: false });
     if (result.canceled) return null;
     const asset = result.assets[0];
@@ -56,7 +78,7 @@ export function useFocusPreferences(userId?: string) {
       const fileName = `focus-alert-${Date.now()}-${safeName(asset.name)}`;
       const destination = FileSystem.documentDirectory ? `${FileSystem.documentDirectory}${fileName}` : asset.uri;
       if (destination !== asset.uri) await FileSystem.copyAsync({ from: asset.uri, to: destination });
-      const alertSound: AlertSound = { uri: destination, name: asset.name, mimeType: asset.mimeType ?? null };
+      const alertSound: AlertSound = { uri: destination, name: asset.name, mimeType: asset.mimeType ?? null, source: "file" };
       await persist({ ...preferences, alertSound });
       return alertSound;
     } catch (cause) { setError(cause instanceof Error ? cause.message : "Could not save that alert sound."); return null; }
@@ -66,7 +88,7 @@ export function useFocusPreferences(userId?: string) {
     if (!preferences) return;
     const existing = preferences.alertSound;
     await persist({ ...preferences, alertSound: null });
-    if (existing?.uri.startsWith(FileSystem.documentDirectory ?? "__none__")) await FileSystem.deleteAsync(existing.uri, { idempotent: true }).catch(() => undefined);
+    if (existing?.source !== "system" && existing?.uri.startsWith(FileSystem.documentDirectory ?? "__none__")) await FileSystem.deleteAsync(existing.uri, { idempotent: true }).catch(() => undefined);
   }, [persist, preferences]);
 
   return { preferences, loading, error, setDuration, chooseAlertSound, clearAlertSound };
