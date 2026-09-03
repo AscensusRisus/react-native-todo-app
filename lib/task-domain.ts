@@ -17,6 +17,9 @@ export type TaskLike = {
 };
 
 export const categories = ["Personal", "Work", "Health", "Home"] as const;
+export function isTaskSchedule(value: unknown): value is TaskSchedule { return value === "daily" || value === "weekdays" || value === "weekends" || value === "once"; }
+export function isTaskPriority(value: unknown): value is TaskPriority { return value === "low" || value === "medium" || value === "high"; }
+export function isTaskCategory(value: unknown): value is (typeof categories)[number] { return typeof value === "string" && (categories as readonly string[]).includes(value); }
 export const defaultTaskDraft: TaskDraft = {
   title: "",
   notes: "",
@@ -48,9 +51,13 @@ export function dateAfter(days: number) {
 }
 
 export function validateTaskDraft(draft: TaskDraft) {
+  if (!draft || typeof draft.title !== "string" || typeof draft.notes !== "string") return "Complete the task details first.";
   if (!draft.title.trim()) return "Give this task a clear name.";
   if (draft.title.trim().length > 80) return "Keep the task name under 80 characters.";
   if (draft.notes.trim().length > 2000) return "Keep details under 2,000 characters.";
+  if (!isTaskCategory(draft.category)) return "Choose a valid area.";
+  if (!isTaskSchedule(draft.schedule)) return "Choose a valid repeat option.";
+  if (!isTaskPriority(draft.priority)) return "Choose a valid priority.";
   if (draft.schedule === "once" && (!draft.dueDate || !isDateKey(draft.dueDate))) return "Use a real due date in YYYY-MM-DD format.";
   return null;
 }
@@ -70,9 +77,20 @@ export function shouldShowToday(task: TaskLike, date = new Date()) {
   if (schedule === "weekends") return day === 0 || day === 6;
   if (schedule === "once") {
     if (task.completions.includes(dateKey(date))) return true;
-    return !task.dueDate ? !task.completions.length : task.dueDate <= dateKey(date);
+    return !task.dueDate || task.dueDate <= dateKey(date);
   }
   return true;
+}
+
+export function isTaskOpenToday(task: TaskLike, date = new Date()) {
+  return shouldShowToday(task, date) && !(task.schedule === "once" && task.completions.length > 0);
+}
+
+export function nextCompletionDates(task: TaskLike, date: string, completed: boolean) {
+  if (!isDateKey(date)) throw new Error("Completion date must be a real calendar date.");
+  const existing = [...new Set(task.completions.filter(isDateKey))];
+  if (task.schedule === "once") return completed ? (existing.length ? existing : [date]) : [];
+  return completed ? (existing.includes(date) ? existing : [...existing, date]) : existing.filter((item) => item !== date);
 }
 
 export const scheduleLabel = (schedule?: TaskSchedule) => ({ daily: "Every day", weekdays: "Weekdays", weekends: "Weekends", once: "One time" }[schedule ?? "daily"]);

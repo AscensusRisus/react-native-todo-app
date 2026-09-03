@@ -1,6 +1,8 @@
 import {
   isDateKey,
+  isTaskOpenToday,
   longestStreak,
+  nextCompletionDates,
   shouldShowToday,
   streakFor,
   taskDateState,
@@ -36,10 +38,14 @@ describe("task domain rules", () => {
     expect(validateTaskDraft({ ...draft, notes: "a".repeat(2001) })).toMatch(/2,000/i);
   });
 
-  it("shows a one-time task only when due or completed today", () => {
+  it("keeps one-time tasks visible for history but not as open work", () => {
     expect(shouldShowToday({ schedule: "once", dueDate: "2026-08-29", completions: [] })).toBe(false);
     expect(shouldShowToday({ schedule: "once", dueDate: "2026-08-27", completions: [] })).toBe(true);
     expect(shouldShowToday({ schedule: "once", dueDate: "2026-08-29", completions: ["2026-08-28"] })).toBe(true);
+    expect(isTaskOpenToday({ schedule: "once", dueDate: "2026-08-29", completions: ["2026-08-28"] })).toBe(false);
+    expect(nextCompletionDates({ schedule: "once", completions: [] }, "2026-08-28", true)).toEqual(["2026-08-28"]);
+    expect(nextCompletionDates({ schedule: "once", completions: ["2026-08-27"] }, "2026-08-28", true)).toEqual(["2026-08-27"]);
+    expect(nextCompletionDates({ schedule: "once", completions: ["2026-08-27"] }, "2026-08-28", false)).toEqual([]);
   });
 
   it("labels overdue, today, and upcoming one-time tasks", () => {

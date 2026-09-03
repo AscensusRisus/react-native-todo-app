@@ -11,7 +11,7 @@ import { useFocusSessions } from "@/hooks/use-focus-sessions";
 import { useFocusPreferences } from "@/hooks/use-focus-preferences";
 import { useFocusTimer } from "@/hooks/use-focus-timer";
 import { useTasks } from "@/hooks/use-tasks";
-import { setTaskCompleted, shouldShowToday, todayKey } from "@/lib/habits";
+import { isTaskOpenToday, setTaskCompleted, shouldShowToday, todayKey } from "@/lib/habits";
 import type { IntervalKind } from "@/lib/focus-domain";
 import { useAuth } from "@/lib/auth-context";
 import { useAppTheme } from "@/lib/app-theme-context";
@@ -32,7 +32,7 @@ export default function FocusScreen() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [confirmingEnd, setConfirmingEnd] = useState(false);
   const handledRouteTaskId = useRef<string | undefined>(undefined);
-  const openTodayTasks = useMemo(() => tasks.filter((task) => shouldShowToday(task) && !task.completions.includes(todayKey())), [tasks]);
+  const openTodayTasks = useMemo(() => tasks.filter((task) => isTaskOpenToday(task)), [tasks]);
   const selectedTask = openTodayTasks.find((task) => task.id === selectedTaskId) ?? null;
   const activeTask = timer?.taskId ? tasks.find((task) => task.id === timer.taskId) ?? null : null;
   const finishedTask = finishedTimer?.taskId ? tasks.find((task) => task.id === finishedTimer.taskId) ?? null : null;
