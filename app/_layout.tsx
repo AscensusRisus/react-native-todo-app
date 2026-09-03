@@ -5,7 +5,7 @@ import { PaperProvider } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { AppThemeProvider, useAppTheme } from "@/lib/app-theme-context";
-import { NavigationBar } from "expo-navigation-bar";
+import * as NavigationBar from "expo-navigation-bar";
 import { Platform } from "react-native";
 
 
@@ -28,11 +28,18 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
 
 function ThemedRootLayout() {
   const { theme, colors, isDark } = useAppTheme();
+  useEffect(() => {
+    if (Platform.OS !== "android") return;
+    void Promise.all([
+      NavigationBar.setVisibilityAsync("hidden"),
+      NavigationBar.setBehaviorAsync("overlay-swipe"),
+      NavigationBar.setButtonStyleAsync(isDark ? "light" : "dark"),
+    ]).catch(() => undefined);
+  }, [isDark]);
   return (
       <PaperProvider theme={theme}>
         <SafeAreaProvider>
          <StatusBar style={isDark ? "light" : "dark"} backgroundColor={colors.canvas} hidden={Platform.OS === "android"} />
-         {Platform.OS === "android" && <NavigationBar hidden style={isDark ? "light" : "dark"} />}
          <RouteGuard>
             <Stack screenOptions={{ contentStyle: { backgroundColor: colors.canvas } }}>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
