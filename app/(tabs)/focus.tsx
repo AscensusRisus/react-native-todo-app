@@ -1,6 +1,6 @@
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
 import { Button, HelperText, Surface, Text, TextInput } from "react-native-paper";
 import { AppScreen } from "@/components/app-screen";
 import { FocusTimer } from "@/components/focus-timer";
