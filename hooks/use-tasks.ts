@@ -6,7 +6,6 @@ export function useTasks(userId?: string) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [refreshToken, setRefreshToken] = useState(0);
 
   useFocusEffect(useCallback(() => {
     if (!userId) {
@@ -23,9 +22,9 @@ export function useTasks(userId?: string) {
       setError(message);
       setLoading(false);
     });
-  }, [refreshToken, userId]));
+  }, [userId]));
 
-  return { tasks, loading, error, refresh: () => setRefreshToken((value) => value + 1) };
+  return { tasks, loading, error };
 }
 
 export function useTask(userId: string | undefined, taskId: string | undefined) {

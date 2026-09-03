@@ -1,7 +1,7 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useMemo, useState } from "react";
-import { Alert, RefreshControl, StyleSheet, View } from "react-native";
+import { Alert, StyleSheet, View } from "react-native";
 import { ActivityIndicator, Button, Chip, IconButton, ProgressBar, Surface, Text } from "react-native-paper";
 import { AppScreen } from "@/components/app-screen";
 import { TaskCard } from "@/components/task-card";
@@ -17,7 +17,7 @@ export default function TodayScreen() {
   const { colors } = useAppTheme();
   const styles = useMemo(() => makeStyles(colors), [colors]);
   const router = useRouter();
-  const { tasks: habits, loading, error: loadError, refresh } = useTasks(user?.uid);
+  const { tasks: habits, loading, error: loadError } = useTasks(user?.uid);
   const [actionError, setActionError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const today = todayKey();
@@ -41,7 +41,7 @@ export default function TodayScreen() {
 
   const greeting = new Date().getHours() < 12 ? "Good morning" : new Date().getHours() < 18 ? "Good afternoon" : "Good evening";
   return (
-    <AppScreen refreshControl={<RefreshControl refreshing={loading} onRefresh={refresh} tintColor={colors.primary} />}>
+    <AppScreen>
       <View style={styles.topRow}>
         <View style={styles.topCopy}>
           <Text style={styles.eyebrow}>{new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" }).toUpperCase()}</Text>
