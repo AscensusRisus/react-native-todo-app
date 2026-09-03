@@ -24,9 +24,13 @@ export function TaskPicker({ tasks, selectedTaskId, onSelect, disabled = false, 
 
 function TaskMenu({ tasks, selectedTaskId, onSelect, disabled, allowNoTask }: Props) {
   const [visible, setVisible] = useState(false);
+  const choose = (taskId: string | null) => {
+    setVisible(false);
+    requestAnimationFrame(() => onSelect(taskId));
+  };
   return <Menu visible={visible} onDismiss={() => setVisible(false)} anchor={<Button compact mode="text" disabled={disabled || !tasks.length} onPress={() => setVisible(true)}>{selectedTaskId ? "Change" : "Select"}</Button>}>
-    {(selectedTaskId || allowNoTask) && <Menu.Item title="No task (break)" onPress={() => { setVisible(false); onSelect(null); }} />}
-    {tasks.map((task) => <Menu.Item key={task.id} title={task.title} leadingIcon={task.id === selectedTaskId ? "check" : "circle-outline"} onPress={() => { setVisible(false); onSelect(task.id); }} />)}
+    {(selectedTaskId || allowNoTask) && <Menu.Item title="No task (break)" onPress={() => choose(null)} />}
+    {tasks.map((task) => <Menu.Item key={task.id} title={task.title} leadingIcon={task.id === selectedTaskId ? "check" : "circle-outline"} onPress={() => choose(task.id)} />)}
   </Menu>;
 }
 
