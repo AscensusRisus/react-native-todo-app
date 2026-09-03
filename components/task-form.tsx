@@ -4,7 +4,6 @@ import { Button, Chip, SegmentedButtons, Surface, Text, TextInput } from "react-
 import { categories, dateAfter, defaultTaskDraft, todayKey, validateTaskDraft, type TaskDraft, type TaskSchedule } from "@/lib/task-domain";
 import { categoryColors } from "@/lib/theme";
 import { useAppTheme } from "@/lib/app-theme-context";
-import { TaskTextEditor } from "@/components/task-text-editor";
 
 type Props = {
   initialValue?: TaskDraft;
@@ -34,7 +33,8 @@ export function TaskForm({ initialValue = defaultTaskDraft, onSubmit, submitLabe
   return (
     <Surface style={styles.form} elevation={0}>
       <TextInput label="What do you want to do?" value={task.title} onChangeText={(value) => update("title", value)} maxLength={80} mode="outlined" style={styles.input} autoFocus={autoFocus} returnKeyType="next" />
-      <TaskTextEditor value={task.notes} onChangeText={(value) => update("notes", value)} />
+      <TextInput label="Task details (optional)" value={task.notes} onChangeText={(value) => update("notes", value)} maxLength={2000} multiline numberOfLines={6} mode="outlined" style={styles.notesInput} contentStyle={styles.notesContent} placeholder="Add context or the next step" textAlignVertical="top" />
+      <Text style={styles.notesMeta}>{task.notes.trim() ? task.notes.trim().split(/\s+/).length : 0} words · {task.notes.length}/2000</Text>
 
       <Text variant="titleSmall" style={styles.label}>AREA</Text>
       <View style={styles.chips}>{categories.map((item) => <Chip key={item} selected={task.category === item} showSelectedCheck={false} onPress={() => update("category", item)} style={task.category === item ? { backgroundColor: `${categoryColors[item]}20` } : undefined} textStyle={task.category === item ? { color: categoryColors[item], fontWeight: "800" } : undefined}>{item}</Chip>)}</View>
@@ -61,6 +61,6 @@ export function TaskForm({ initialValue = defaultTaskDraft, onSubmit, submitLabe
   );
 }
 
-const makeStyles = (colors: { muted: string; surface: string; line: string; danger: string }) => StyleSheet.create({
-  form: { backgroundColor: colors.surface, padding: 18, borderRadius: 22, borderWidth: 1, borderColor: colors.line }, input: { marginBottom: 14, backgroundColor: colors.surface }, label: { color: colors.muted, letterSpacing: 0.9, fontSize: 11, marginTop: 8, marginBottom: 10 }, chips: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginBottom: 12 }, save: { marginTop: 24 }, buttonContent: { height: 50 }, error: { color: colors.danger, marginTop: 14 },
+const makeStyles = (colors: { muted: string; ink: string; surface: string; line: string; danger: string }) => StyleSheet.create({
+  form: { backgroundColor: colors.surface, padding: 18, borderRadius: 22, borderWidth: 1, borderColor: colors.line }, input: { marginBottom: 14, backgroundColor: colors.surface }, notesInput: { marginBottom: 2, backgroundColor: colors.surface, minHeight: 140 }, notesContent: { color: colors.ink, paddingTop: 10, minHeight: 118, lineHeight: 22 }, notesMeta: { color: colors.muted, fontSize: 11, textAlign: "right", marginBottom: 12 }, label: { color: colors.muted, letterSpacing: 0.9, fontSize: 11, marginTop: 8, marginBottom: 10 }, chips: { flexDirection: "row", gap: 8, flexWrap: "wrap", marginBottom: 12 }, save: { marginTop: 24 }, buttonContent: { height: 50 }, error: { color: colors.danger, marginTop: 14 },
 });

@@ -9,10 +9,10 @@ Users create an account, verify their email, then organise routines and one-time
 - Email/password sign-up, email verification, sign-in, and password reset
 - Private Firestore task data scoped to the signed-in user
 - Create, edit, complete, and delete tasks
-- A mobile task text editor with headings, bullets, check items, and up to 2,000 characters of detail
+- Plain-text task details with a clear 2,000-character limit
 - Daily, weekday, weekend, and one-time schedules
 - Due dates with upcoming and overdue states
-- Today progress, latest activity tracking, a private task calendar, and streak summaries
+- Today progress, focus activity totals, and a private task calendar
 - Task-connected Focus timer with 25-minute focus, 5-minute short-break, and 15-minute long-break intervals
 - Timestamp-based countdown recovery after backgrounding or restarting the app on the same device
 - Private, immutable focus-session history with retry-safe local syncing when a connection is unavailable
