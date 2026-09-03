@@ -44,5 +44,5 @@ export default function ProgressScreen() {
 const makeStyles = (colors: { primary: string; accent: string; ink: string; muted: string; surface: string; line: string; danger: string }) => StyleSheet.create({
   eyebrow: { color: colors.primary, fontSize: 11, letterSpacing: 1.1, fontWeight: "800", marginTop: 4 }, heading: { fontWeight: "800", color: colors.ink, marginTop: 5, letterSpacing: -0.5 }, lead: { color: colors.muted, lineHeight: 22, maxWidth: 480, marginTop: 7, marginBottom: 22 },
   stats: { flexDirection: "row", gap: 9, marginBottom: 28 }, stat: { flex: 1, minHeight: 120, borderRadius: 18, padding: 14, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line }, statNumber: { color: colors.ink, fontWeight: "800", marginTop: 8 }, statLabel: { color: colors.muted, fontSize: 12 }, section: { color: colors.ink, fontWeight: "800", marginBottom: 12 },
-  empty: { padding: 24, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line }, loader: { marginTop: 48 }, error: { color: colors.danger },
+  taskTitle: { color: colors.ink, fontWeight: "700" }, muted: { color: colors.muted, marginTop: 2 }, empty: { padding: 24, borderRadius: 20, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line }, loader: { marginTop: 48 }, error: { color: colors.danger },
 });
