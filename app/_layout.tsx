@@ -38,6 +38,7 @@ function ThemedRootLayout() {
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
               <Stack.Screen name="auth" options={{ headerShown: false }} />
               <Stack.Screen name="task/[id]" options={{ headerShown: false }} />
+              <Stack.Screen name="settings" options={{ headerShown: false }} />
             </Stack>
           </RouteGuard>
         </SafeAreaProvider>

@@ -1,15 +1,18 @@
 import { KeyboardAvoidingView, Platform, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
+import { useMemo } from "react";
 import { Text } from "react-native-paper";
 import { AppScreen } from "@/components/app-screen";
 import { TaskForm } from "@/components/task-form";
 import { useAuth } from "@/lib/auth-context";
 import { createTask, type TaskDraft } from "@/lib/habits";
-import { colors } from "@/lib/theme";
+import { useAppTheme } from "@/lib/app-theme-context";
 
 export default function AddTaskScreen() {
   const { user } = useAuth();
   const router = useRouter();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
 
   const create = async (task: TaskDraft) => {
     if (!user) return "You need to sign in before adding a task.";
@@ -34,6 +37,6 @@ export default function AddTaskScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: { primary: string; ink: string; muted: string }) => StyleSheet.create({
   flex: { flex: 1 }, eyebrow: { color: colors.primary, fontSize: 11, letterSpacing: 1.1, fontWeight: "800", marginTop: 4 }, heading: { fontWeight: "800", color: colors.ink, marginTop: 5, letterSpacing: -0.5 }, lead: { color: colors.muted, lineHeight: 22, maxWidth: 450, marginTop: 7, marginBottom: 22 },
 });

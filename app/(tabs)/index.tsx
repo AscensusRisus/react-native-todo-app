@@ -8,12 +8,14 @@ import { TaskCard } from "@/components/task-card";
 import { useTasks } from "@/hooks/use-tasks";
 import { useAuth } from "@/lib/auth-context";
 import { dueDateLabel, removeTask, setTaskCompleted, shouldShowToday, taskDateState, todayKey, type Task } from "@/lib/habits";
-import { colors } from "@/lib/theme";
+import { useAppTheme } from "@/lib/app-theme-context";
 
 type Filter = "all" | "open" | "done";
 
 export default function TodayScreen() {
-  const { user, signOut } = useAuth();
+  const { user } = useAuth();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const router = useRouter();
   const { tasks: habits, loading, error: loadError, refresh } = useTasks(user?.uid);
   const [actionError, setActionError] = useState<string | null>(null);
@@ -46,7 +48,7 @@ export default function TodayScreen() {
           <Text variant="headlineMedium" style={styles.heading}>{greeting}</Text>
           <Text style={styles.email} numberOfLines={1}>{user?.email}</Text>
         </View>
-        <IconButton icon="logout-variant" mode="contained-tonal" accessibilityLabel="Sign out" onPress={signOut} />
+        <IconButton icon="account-cog-outline" mode="contained-tonal" accessibilityLabel="Open settings" onPress={() => router.push("/settings")} />
       </View>
 
       <Surface style={styles.progressCard} elevation={0}>
@@ -76,10 +78,10 @@ export default function TodayScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: { primary: string; ink: string; muted: string; primarySoft: string; surface: string; line: string; danger: string; dangerSoft: string }) => StyleSheet.create({
   topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }, topCopy: { flex: 1, paddingRight: 10 }, eyebrow: { color: colors.primary, fontSize: 11, letterSpacing: 1.1, fontWeight: "800" }, heading: { color: colors.ink, fontWeight: "800", letterSpacing: -0.6, marginTop: 4 }, email: { color: colors.muted, marginTop: 2 },
-  progressCard: { backgroundColor: colors.primarySoft, borderRadius: 22, padding: 20, marginBottom: 28, borderWidth: 1, borderColor: "#C9E3D6" }, progressHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }, progressTitle: { color: "#123D2D", fontWeight: "700" }, progressCopy: { color: "#456556", marginTop: 3 }, percent: { color: colors.primary, fontWeight: "800" }, progressBar: { height: 9, borderRadius: 5, backgroundColor: "#C3DBCF" },
+  progressCard: { backgroundColor: colors.primarySoft, borderRadius: 22, padding: 20, marginBottom: 28, borderWidth: 1, borderColor: colors.line }, progressHeader: { flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }, progressTitle: { color: colors.ink, fontWeight: "700" }, progressCopy: { color: colors.muted, marginTop: 3 }, percent: { color: colors.primary, fontWeight: "800" }, progressBar: { height: 9, borderRadius: 5, backgroundColor: colors.line },
   sectionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" }, sectionTitle: { color: colors.ink, fontWeight: "800" }, filters: { flexDirection: "row", gap: 8, marginVertical: 14, flexWrap: "wrap" },
-  empty: { alignItems: "center", padding: 30, backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: colors.line }, emptyIcon: { width: 60, height: 60, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: colors.primarySoft, marginBottom: 15 }, emptyTitle: { fontWeight: "700", color: colors.ink }, emptyText: { textAlign: "center", color: colors.muted, marginTop: 6, marginBottom: 18, maxWidth: 330, lineHeight: 21 }, loader: { marginTop: 48 }, error: { flexDirection: "row", gap: 8, padding: 13, borderRadius: 14, backgroundColor: colors.dangerSoft, marginBottom: 12 }, errorText: { flex: 1, color: "#7D2929" },
+  empty: { alignItems: "center", padding: 30, backgroundColor: colors.surface, borderRadius: 20, borderWidth: 1, borderColor: colors.line }, emptyIcon: { width: 60, height: 60, borderRadius: 20, alignItems: "center", justifyContent: "center", backgroundColor: colors.primarySoft, marginBottom: 15 }, emptyTitle: { fontWeight: "700", color: colors.ink }, emptyText: { textAlign: "center", color: colors.muted, marginTop: 6, marginBottom: 18, maxWidth: 330, lineHeight: 21 }, loader: { marginTop: 48 }, error: { flexDirection: "row", gap: 8, padding: 13, borderRadius: 14, backgroundColor: colors.dangerSoft, marginBottom: 12 }, errorText: { flex: 1, color: colors.danger },
   upcoming: { marginTop: 16, padding: 14, borderRadius: 18, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.line }, upcomingTitle: { fontWeight: "700", color: colors.ink, marginBottom: 4 },
 });

@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Alert, StyleSheet, View } from "react-native";
 import { ActivityIndicator, Button, Chip, IconButton, Text } from "react-native-paper";
 import { AppScreen } from "@/components/app-screen";
@@ -7,12 +7,14 @@ import { TaskForm } from "@/components/task-form";
 import { useAuth } from "@/lib/auth-context";
 import { dueDateLabel, removeTask, setTaskCompleted, taskDateState, todayKey, updateTask, type TaskDraft } from "@/lib/habits";
 import { useTask } from "@/hooks/use-tasks";
-import { colors } from "@/lib/theme";
+import { useAppTheme } from "@/lib/app-theme-context";
 
 export default function TaskDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user } = useAuth();
+  const { colors } = useAppTheme();
+  const styles = useMemo(() => makeStyles(colors), [colors]);
   const { task, loading, error } = useTask(user?.uid, id);
   const [actionError, setActionError] = useState<string | null>(null);
 
@@ -69,6 +71,6 @@ export default function TaskDetailScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: { ink: string; muted: string; danger: string; dangerSoft: string; warningSoft: string }) => StyleSheet.create({
   top: { height: 50, flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }, topTitle: { color: colors.muted, letterSpacing: 1.1, fontWeight: "800", fontSize: 11 }, heading: { color: colors.ink, fontWeight: "800", letterSpacing: -0.5 }, lead: { color: colors.muted, marginVertical: 8 }, statusRow: { flexDirection: "row", flexWrap: "wrap", gap: 8, marginTop: 12 }, overdue: { backgroundColor: colors.dangerSoft }, due: { backgroundColor: colors.warningSoft }, complete: { marginTop: 18, marginBottom: 10 }, focus: { marginBottom: 12 }, error: { color: colors.danger, marginBottom: 12 }, loader: { marginTop: 80 },
 });
