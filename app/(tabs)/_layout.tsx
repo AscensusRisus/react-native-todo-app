@@ -14,6 +14,7 @@ export default function TabsLayout() {
         tabBarLabelStyle: styles.label,
         tabBarStyle: [styles.bar, { backgroundColor: colors.surface, borderTopColor: colors.line }],
         tabBarItemStyle: styles.item,
+        tabBarHideOnKeyboard: true,
       }}
     >
       <Tabs.Screen name="index" options={{ title: "Today", tabBarIcon: ({ color, size }) => <MaterialCommunityIcons name="check-circle-outline" size={size} color={color} /> }} />

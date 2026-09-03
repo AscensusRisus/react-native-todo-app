@@ -5,10 +5,10 @@ import type { ComponentProps } from "react";
 import type { ActiveTimer, IntervalKind } from "@/lib/focus-domain";
 import { useAppTheme } from "@/lib/app-theme-context";
 
-type Props = { timer: ActiveTimer | null; remaining: number | null; selectedKind: IntervalKind; durations: Record<IntervalKind, number>; onSelectKind: (kind: IntervalKind) => void; onStart: () => void; onPause: () => void; onResume: () => void; onEnd: () => void; disabled?: boolean };
+type Props = { timer: ActiveTimer | null; remaining: number | null; selectedKind: IntervalKind; durations: Record<IntervalKind, number>; onSelectKind: (kind: IntervalKind) => void; onStart: () => void; onPause: () => void; onResume: () => void; onEnd: () => void; disabled?: boolean; startDisabled?: boolean };
 const labelFor = (kind: IntervalKind) => kind === "focus" ? "Focus" : kind === "shortBreak" ? "Short break" : "Long break";
 
-export function FocusTimer({ timer, remaining, selectedKind, durations, onSelectKind, onStart, onPause, onResume, onEnd, disabled }: Props) {
+export function FocusTimer({ timer, remaining, selectedKind, durations, onSelectKind, onStart, onPause, onResume, onEnd, disabled, startDisabled = false }: Props) {
   const { colors, isDark } = useAppTheme();
   const styles = createStyles(colors);
   const activeKind = timer?.kind ?? selectedKind;
@@ -27,7 +27,7 @@ export function FocusTimer({ timer, remaining, selectedKind, durations, onSelect
     <Text style={styles.kind}>{labelFor(activeKind).toUpperCase()}</Text>
     <ProgressBar progress={progress} color={visual.color} style={styles.progress} />
     <View style={styles.controls}>
-      {!timer ? <Button mode="contained" icon="play" disabled={disabled} onPress={onStart} style={styles.primary}>Start {labelFor(selectedKind).toLowerCase()}</Button> : running ? <Button mode="contained" icon="pause" onPress={onPause} style={styles.primary}>Pause</Button> : <Button mode="contained" icon="play" onPress={onResume} style={styles.primary}>Resume</Button>}
+      {!timer ? <Button mode="contained" icon="play" disabled={disabled || startDisabled} onPress={onStart} style={styles.primary}>Start {labelFor(selectedKind).toLowerCase()}</Button> : running ? <Button mode="contained" icon="pause" onPress={onPause} style={styles.primary}>Pause</Button> : <Button mode="contained" icon="play" onPress={onResume} style={styles.primary}>Resume</Button>}
       {!!timer && <Button mode="outlined" icon={running ? "stop" : "refresh"} onPress={onEnd}>{running ? "End" : "Reset"}</Button>}
     </View>
   </Surface>;

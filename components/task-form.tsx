@@ -4,6 +4,7 @@ import { Button, Chip, SegmentedButtons, Surface, Text, TextInput } from "react-
 import { categories, dateAfter, defaultTaskDraft, todayKey, validateTaskDraft, type TaskDraft, type TaskSchedule } from "@/lib/task-domain";
 import { categoryColors } from "@/lib/theme";
 import { useAppTheme } from "@/lib/app-theme-context";
+import { TaskTextEditor } from "@/components/task-text-editor";
 
 type Props = {
   initialValue?: TaskDraft;
@@ -33,7 +34,7 @@ export function TaskForm({ initialValue = defaultTaskDraft, onSubmit, submitLabe
   return (
     <Surface style={styles.form} elevation={0}>
       <TextInput label="What do you want to do?" value={task.title} onChangeText={(value) => update("title", value)} maxLength={80} mode="outlined" style={styles.input} autoFocus={autoFocus} returnKeyType="next" />
-      <TextInput label="Notes (optional)" value={task.notes} onChangeText={(value) => update("notes", value)} maxLength={240} multiline numberOfLines={3} mode="outlined" style={styles.input} />
+      <TaskTextEditor value={task.notes} onChangeText={(value) => update("notes", value)} />
 
       <Text variant="titleSmall" style={styles.label}>AREA</Text>
       <View style={styles.chips}>{categories.map((item) => <Chip key={item} selected={task.category === item} showSelectedCheck={false} onPress={() => update("category", item)} style={task.category === item ? { backgroundColor: `${categoryColors[item]}20` } : undefined} textStyle={task.category === item ? { color: categoryColors[item], fontWeight: "800" } : undefined}>{item}</Chip>)}</View>

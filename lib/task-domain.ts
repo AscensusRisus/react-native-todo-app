@@ -50,7 +50,7 @@ export function dateAfter(days: number) {
 export function validateTaskDraft(draft: TaskDraft) {
   if (!draft.title.trim()) return "Give this task a clear name.";
   if (draft.title.trim().length > 80) return "Keep the task name under 80 characters.";
-  if (draft.notes.trim().length > 240) return "Keep notes under 240 characters.";
+  if (draft.notes.trim().length > 2000) return "Keep details under 2,000 characters.";
   if (draft.schedule === "once" && (!draft.dueDate || !isDateKey(draft.dueDate))) return "Use a real due date in YYYY-MM-DD format.";
   return null;
 }

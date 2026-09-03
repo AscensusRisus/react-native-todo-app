@@ -2,7 +2,7 @@ import { collection, doc, onSnapshot, orderBy, query, serverTimestamp, setDoc, T
 import { db, firebaseSetupError } from "./firebase";
 import { focusSessionPayload, type FocusSessionDraft, type IntervalKind } from "./focus-domain";
 
-export type FocusSession = Omit<FocusSessionDraft, "id" | "startedAtMs" | "endedAtMs"> & { id: string };
+export type FocusSession = Omit<FocusSessionDraft, "id" | "startedAtMs" | "endedAtMs"> & { id: string; endedAtMs?: number };
 
 export function focusSessionFields(session: FocusSessionDraft) {
   const payload = focusSessionPayload(session);
@@ -22,11 +22,12 @@ function fromSnapshot(id: string, data: Record<string, unknown>): FocusSession |
   const kind = data.kind;
   if (kind !== "focus" && kind !== "shortBreak" && kind !== "longBreak") return null;
   if (data.status !== "completed" && data.status !== "interrupted") return null;
+  const endedAtMs = data.endedAt instanceof Timestamp ? data.endedAt.toMillis() : undefined;
   return {
     id, kind: kind as IntervalKind, status: data.status, taskId: typeof data.taskId === "string" ? data.taskId : null,
     taskTitleSnapshot: typeof data.taskTitleSnapshot === "string" ? data.taskTitleSnapshot : null,
     intention: typeof data.intention === "string" ? data.intention : "", plannedSeconds: Number(data.plannedSeconds) || 0,
-    focusedSeconds: Number(data.focusedSeconds) || 0, localDate: typeof data.localDate === "string" ? data.localDate : "",
+    focusedSeconds: Number(data.focusedSeconds) || 0, localDate: typeof data.localDate === "string" ? data.localDate : "", endedAtMs,
   };
 }
 

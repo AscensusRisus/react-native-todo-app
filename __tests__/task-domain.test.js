@@ -31,6 +31,11 @@ describe("task domain rules", () => {
     expect(validateTaskDraft({ ...draft, schedule: "once", dueDate: "2026-09-01" })).toBeNull();
   });
 
+  it("allows structured task details up to the editor limit", () => {
+    expect(validateTaskDraft({ ...draft, notes: "a".repeat(2000) })).toBeNull();
+    expect(validateTaskDraft({ ...draft, notes: "a".repeat(2001) })).toMatch(/2,000/i);
+  });
+
   it("shows a one-time task only when due or completed today", () => {
     expect(shouldShowToday({ schedule: "once", dueDate: "2026-08-29", completions: [] })).toBe(false);
     expect(shouldShowToday({ schedule: "once", dueDate: "2026-08-27", completions: [] })).toBe(true);

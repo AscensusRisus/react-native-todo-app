@@ -1,10 +1,7 @@
 appId: host.exp.exponent
 ---
-# The app must already be signed in and opened to the Focus route.
-- openLink: "exp://localhost:8081"
-- waitForAnimationToEnd
-- tapOn:
-    text: "Focus"
+# The app must already be signed in. Use LAN so Expo Go can fetch Metro's bundle.
+- openLink: "exp://192.168.1.35:8081/--/focus"
 - waitForAnimationToEnd
 - assertVisible: "FOCUS ON ONE THING"
 - assertVisible: "Focus"
@@ -12,3 +9,14 @@ appId: host.exp.exponent
 - assertVisible: "Short break · 5 min"
 - assertVisible: "Long break · 15 min"
 - assertVisible: "Choose sound"
+- tapOn: "Short break · 5 min"
+- scrollUntilVisible:
+    element:
+      text: "Start short break"
+    direction: DOWN
+- tapOn: "Start short break"
+- assertVisible: "Pause"
+- tapOn: "End"
+- assertVisible: "End this interval?"
+- tapOn: "End interval"
+- assertVisible: "Start short break"

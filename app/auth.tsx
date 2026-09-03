@@ -5,7 +5,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, View } from "re
 import { Button, HelperText, Surface, Text, TextInput } from "react-native-paper";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useAuth } from "@/lib/auth-context";
-import { colors } from "@/lib/theme";
+import { useAppTheme } from "@/lib/app-theme-context";
 
 const validPassword = (password: string) =>
   password.length >= 10 && /[a-z]/.test(password) && /[A-Z]/.test(password) && /\d/.test(password);
@@ -20,6 +20,8 @@ export default function AuthScreen() {
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
   const { signIn, signUp, resetPassword, setupError } = useAuth();
+  const { colors } = useAppTheme();
+  const styles = makeStyles(colors);
 
   const handleAuth = async () => {
     if (!email.trim() || !password) return setError("Enter your email and password.");
@@ -91,7 +93,7 @@ export default function AuthScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+const makeStyles = (colors: { canvas: string; primary: string; ink: string; muted: string; surface: string; line: string; danger: string; dangerSoft: string; primarySoft: string }) => StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.canvas },
   page: { flexGrow: 1, width: "100%", maxWidth: 520, alignSelf: "center", justifyContent: "center", padding: 24, paddingVertical: 40 },
   brand: { alignItems: "center", marginBottom: 28 },
@@ -104,8 +106,8 @@ const styles = StyleSheet.create({
   input: { marginBottom: 12, backgroundColor: colors.surface },
   buttonContent: { height: 50 },
   errorBox: { flexDirection: "row", gap: 9, padding: 12, borderRadius: 12, backgroundColor: colors.dangerSoft, marginBottom: 14 },
-  errorText: { color: "#7D2929", flex: 1 },
+  errorText: { color: colors.danger, flex: 1 },
   noticeBox: { flexDirection: "row", gap: 9, padding: 12, borderRadius: 12, backgroundColor: colors.primarySoft, marginBottom: 14 },
-  noticeText: { color: "#174C39", flex: 1 },
+  noticeText: { color: colors.ink, flex: 1 },
   switchRow: { marginTop: 18, flexDirection: "row", justifyContent: "center", alignItems: "center" },
 });
