@@ -25,9 +25,14 @@ export function TaskForm({ initialValue = defaultTaskDraft, onSubmit, submitLabe
     if (validationError) return setError(validationError);
     setSaving(true);
     setError(null);
-    const submitError = await onSubmit({ ...task, dueDate: task.schedule === "once" ? task.dueDate : null });
-    setSaving(false);
-    if (submitError) setError(submitError);
+    try {
+      const submitError = await onSubmit({ ...task, dueDate: task.schedule === "once" ? task.dueDate : null });
+      if (submitError) setError(submitError);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Could not save this task.");
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
