@@ -11,9 +11,9 @@ service cloud.firestore {
         && request.resource.data.category in ['Personal', 'Work', 'Health', 'Home']
         && request.resource.data.schedule in ['daily', 'weekdays', 'weekends', 'once']
         && request.resource.data.priority in ['low', 'medium', 'high']
-        && (request.resource.data.dueDate == null || request.resource.data.dueDate is string)
-        && request.resource.data.createdDate is string
-        && request.resource.data.completions is list;
+        && (request.resource.data.dueDate == null || (request.resource.data.dueDate is string && request.resource.data.dueDate.matches('^\\d{4}-\\d{2}-\\d{2}$')))
+        && request.resource.data.createdDate is string && request.resource.data.createdDate.matches('^\\d{4}-\\d{2}-\\d{2}$')
+        && request.resource.data.completions is list && request.resource.data.completions.size() <= 3660;
       allow update: if request.auth != null && request.auth.uid == userId
         && request.resource.data.keys().hasOnly(['title', 'notes', 'category', 'schedule', 'priority', 'dueDate', 'createdDate', 'completions', 'createdAt'])
         && request.resource.data.createdAt == resource.data.createdAt
@@ -24,8 +24,9 @@ service cloud.firestore {
         && (!request.resource.data.keys().hasAll(['category']) || request.resource.data.category in ['Personal', 'Work', 'Health', 'Home'])
         && (!request.resource.data.keys().hasAll(['schedule']) || request.resource.data.schedule in ['daily', 'weekdays', 'weekends', 'once'])
         && (!request.resource.data.keys().hasAll(['priority']) || request.resource.data.priority in ['low', 'medium', 'high'])
-        && (!request.resource.data.keys().hasAll(['dueDate']) || request.resource.data.dueDate == null || request.resource.data.dueDate is string)
-        && request.resource.data.completions is list;
+        && (!request.resource.data.keys().hasAll(['dueDate']) || request.resource.data.dueDate == null || (request.resource.data.dueDate is string && request.resource.data.dueDate.matches('^\\d{4}-\\d{2}-\\d{2}$')))
+        && (!request.resource.data.keys().hasAll(['createdDate']) || (request.resource.data.createdDate is string && request.resource.data.createdDate.matches('^\\d{4}-\\d{2}-\\d{2}$')))
+        && request.resource.data.completions is list && request.resource.data.completions.size() <= 3660;
     }
 
     match /users/{userId}/focusSessions/{sessionId} {
