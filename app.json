@@ -40,7 +40,8 @@
         "expo-navigation-bar",
         {
           "visibility": "hidden",
-          "style": "light",
+          "barStyle": "light",
+          "behavior": "overlay-swipe",
           "enforceContrast": false
         }
       ]
