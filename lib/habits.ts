@@ -22,9 +22,6 @@ export type Task = TaskDraft & {
   completions: string[];
 };
 
-/** @deprecated Use Task. Kept temporarily so saved task data remains compatible. */
-export type Habit = Task;
-
 const tasksCollection = (userId: string) => {
   if (!db) throw new Error(firebaseSetupError ?? "Firebase is unavailable.");
   return collection(db, "users", userId, "habits");
