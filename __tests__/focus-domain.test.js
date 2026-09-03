@@ -1,4 +1,4 @@
-import { completedSession, durationFor, focusSessionPayload, focusedSecondsForInterruptedTimer, interruptedSession, isTimerFinished, pauseTimer, remainingSeconds, resumeTimer, todayFocusSummary, validateStoredTimer } from "../lib/focus-domain";
+import { completedSession, durationFor, focusSessionPayload, focusedSecondsForInterruptedTimer, interruptedSession, isTimerFinished, pauseTimer, remainingSeconds, resumeTimer, todayFocusSummary, validateFocusSessionDraft, validateStoredTimer } from "../lib/focus-domain";
 
 const running = (overrides = {}) => ({ version: 1, ownerUid: "user-1", intervalId: "interval-1", kind: "focus", taskId: "task-1", taskTitleSnapshot: "Draft", intention: "Opening", alertSound: null, durationSeconds: 1500, startedAtMs: 1_000, deadlineAtMs: 1_501_000, remainingWhenPausedSeconds: null, phase: "running", ...overrides });
 
@@ -56,5 +56,14 @@ describe("focus timer domain", () => {
     const payload = focusSessionPayload(session);
     expect(Object.keys(payload)).toEqual(["taskId", "taskTitleSnapshot", "intention", "kind", "status", "plannedSeconds", "focusedSeconds", "localDate", "startedAtMs", "endedAtMs"]);
     expect(payload).toMatchObject({ taskId: "task-1", taskTitleSnapshot: "Keep this title", intention: "Write clearly", plannedSeconds: 1500, focusedSeconds: 1500, startedAtMs: 1_000, endedAtMs: 1_501_000 });
+  });
+
+  it("accepts only complete, bounded pending session records", () => {
+    const valid = { id: "focus-1", taskId: "task-1", taskTitleSnapshot: "Read", intention: "", kind: "focus", status: "completed", plannedSeconds: 1500, focusedSeconds: 1500, localDate: "2026-09-03", startedAtMs: 1000, endedAtMs: 1501000 };
+    expect(validateFocusSessionDraft(valid)).toEqual(valid);
+    expect(validateFocusSessionDraft({ ...valid, localDate: "not-a-date" })).toBeNull();
+    expect(validateFocusSessionDraft({ ...valid, focusedSeconds: 1501 })).toBeNull();
+    expect(validateFocusSessionDraft({ ...valid, kind: "shortBreak", focusedSeconds: 1 })).toBeNull();
+    expect(validateFocusSessionDraft({ ...valid, status: "interrupted", focusedSeconds: 30 })).toBeNull();
   });
 });

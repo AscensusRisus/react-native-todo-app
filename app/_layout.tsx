@@ -1,16 +1,17 @@
 import { AuthProvider, useAuth } from "@/lib/auth-context";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
-import { PaperProvider } from "react-native-paper";
+import { ActivityIndicator, PaperProvider } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { AppThemeProvider, useAppTheme } from "@/lib/app-theme-context";
-import { Platform } from "react-native";
+import { Platform, View } from "react-native";
 
 
 function RouteGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, isLoadingUser } = useAuth();
+  const { colors } = useAppTheme();
   const segments = useSegments();
 
   useEffect(() => {
@@ -22,6 +23,8 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
       router.replace("/");
     }
   }, [user, isLoadingUser, router, segments]);
+  if (isLoadingUser) return <View style={{ flex: 1, alignItems: "center", justifyContent: "center", backgroundColor: colors.canvas }}><ActivityIndicator color={colors.primary} /></View>;
+  if ((!user && segments[0] !== "auth") || (user && segments[0] === "auth")) return null;
   return <>{children}</>;
 }
 

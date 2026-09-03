@@ -1,4 +1,4 @@
-import { dateKey } from "./task-domain";
+import { dateKey, isDateKey } from "./task-domain";
 import type { AlertSound } from "./focus-preferences";
 
 export type IntervalKind = "focus" | "shortBreak" | "longBreak";
@@ -96,6 +96,22 @@ export function focusSessionPayload(session: FocusSessionDraft) {
     kind: session.kind, status: session.status, plannedSeconds: session.plannedSeconds, focusedSeconds: session.focusedSeconds,
     localDate: session.localDate, startedAtMs: session.startedAtMs, endedAtMs: session.endedAtMs,
   };
+}
+
+export function validateFocusSessionDraft(value: unknown): FocusSessionDraft | null {
+  if (!value || typeof value !== "object") return null;
+  const item = value as Record<string, unknown>;
+  const kind = item.kind;
+  const status = item.status;
+  if (typeof item.id !== "string" || !item.id || !isKind(kind) || (status !== "completed" && status !== "interrupted")) return null;
+  if (!(item.taskId === null || typeof item.taskId === "string") || !(item.taskTitleSnapshot === null || typeof item.taskTitleSnapshot === "string")) return null;
+  if (typeof item.intention !== "string" || item.intention.length > 120 || typeof item.localDate !== "string" || !isDateKey(item.localDate)) return null;
+  if (typeof item.plannedSeconds !== "number" || !Number.isInteger(item.plannedSeconds) || item.plannedSeconds < 1 || item.plannedSeconds > 14_400) return null;
+  if (typeof item.focusedSeconds !== "number" || !Number.isInteger(item.focusedSeconds) || item.focusedSeconds < 0 || item.focusedSeconds > item.plannedSeconds) return null;
+  if (typeof item.startedAtMs !== "number" || !Number.isFinite(item.startedAtMs) || typeof item.endedAtMs !== "number" || !Number.isFinite(item.endedAtMs) || item.endedAtMs < item.startedAtMs) return null;
+  if (kind !== "focus" && item.focusedSeconds !== 0) return null;
+  if (status === "interrupted" && (kind !== "focus" || item.focusedSeconds < 60)) return null;
+  return item as FocusSessionDraft;
 }
 
 const isKind = (value: unknown): value is IntervalKind => value === "focus" || value === "shortBreak" || value === "longBreak";

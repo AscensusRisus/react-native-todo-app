@@ -3,7 +3,7 @@ import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AccessibilityInfo, AppState, type AppStateStatus } from "react-native";
 import { playAlertSound } from "@/lib/alert-sound";
-import { FOCUS_PENDING_STORAGE_KEY, FOCUS_TIMER_STORAGE_KEY, completedSession, durationFor, interruptedSession, isTimerFinished, pauseTimer, remainingSeconds, resumeTimer, type ActiveTimer, type FocusSessionDraft, type IntervalKind, validateStoredTimer } from "@/lib/focus-domain";
+import { FOCUS_PENDING_STORAGE_KEY, FOCUS_TIMER_STORAGE_KEY, completedSession, durationFor, interruptedSession, isTimerFinished, pauseTimer, remainingSeconds, resumeTimer, type ActiveTimer, type FocusSessionDraft, type IntervalKind, validateFocusSessionDraft, validateStoredTimer } from "@/lib/focus-domain";
 import { saveFocusSession } from "@/lib/focus-sessions";
 import type { AlertSound } from "@/lib/focus-preferences";
 
@@ -42,7 +42,13 @@ export function useFocusTimer(userId?: string) {
         await AsyncStorage.removeItem(FOCUS_PENDING_STORAGE_KEY);
         return [];
       }
-      return envelope.sessions;
+      const valid = envelope.sessions.map(validateFocusSessionDraft).filter((session): session is FocusSessionDraft => session !== null);
+      if (valid.length !== envelope.sessions.length) {
+        setSyncError("One invalid pending focus record was discarded locally.");
+        if (valid.length) await AsyncStorage.setItem(FOCUS_PENDING_STORAGE_KEY, JSON.stringify({ ownerUid: userId, sessions: valid }));
+        else await AsyncStorage.removeItem(FOCUS_PENDING_STORAGE_KEY);
+      }
+      return valid;
     } catch { await AsyncStorage.removeItem(FOCUS_PENDING_STORAGE_KEY); return []; }
   }, [userId]);
 
@@ -111,8 +117,6 @@ export function useFocusTimer(userId?: string) {
     const restore = async () => {
       setRestoring(true);
       if (!userId) {
-        await empty();
-        await AsyncStorage.removeItem(FOCUS_PENDING_STORAGE_KEY);
         if (alive) { timerRef.current = null; setTimer(null); setFinishedTimer(null); setPendingCount(0); setPendingSessions([]); setRestoring(false); }
         return;
       }
