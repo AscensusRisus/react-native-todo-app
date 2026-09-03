@@ -6,7 +6,6 @@ import { AppScreen } from "@/components/app-screen";
 import { FocusTimer } from "@/components/focus-timer";
 import { IntervalSettings } from "@/components/interval-settings";
 import { TaskPicker } from "@/components/task-picker";
-import { playAlertSound } from "@/lib/alert-sound";
 import { DEFAULT_INTERVAL_DURATIONS } from "@/lib/focus-preferences";
 import { useFocusSessions } from "@/hooks/use-focus-sessions";
 import { useFocusPreferences } from "@/hooks/use-focus-preferences";
@@ -25,7 +24,7 @@ export default function FocusScreen() {
   const router = useRouter();
   const { tasks, loading, error: tasksError } = useTasks(user?.uid);
   const { summary, error: sessionsError } = useFocusSessions(user?.uid);
-  const { preferences, loading: preferencesLoading, error: preferencesError, setDuration, chooseAlertSound, clearAlertSound } = useFocusPreferences(user?.uid);
+  const { preferences, loading: preferencesLoading, error: preferencesError, setDuration } = useFocusPreferences(user?.uid);
   const { timer, remainingSeconds, finishedTimer, pendingCount, pendingSessions, syncError, restoring, start, pause, resume, end, unlinkTask, dismissFinished, retryPending } = useFocusTimer(user?.uid);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [kind, setKind] = useState<IntervalKind>("focus");
@@ -62,18 +61,18 @@ export default function FocusScreen() {
   const startTimer = async () => {
     if (kind === "focus" && !selectedTask) { setActionError("Choose an open task before starting a focus round."); return; }
     try {
-      await start({ kind, taskId: selectedTask?.id ?? null, taskTitleSnapshot: selectedTask?.title ?? null, intention, durationSeconds: (preferences?.durations ?? DEFAULT_INTERVAL_DURATIONS)[kind], alertSound: preferences?.alertSound ?? null });
+      await start({ kind, taskId: selectedTask?.id ?? null, taskTitleSnapshot: selectedTask?.title ?? null, intention, durationSeconds: (preferences?.durations ?? DEFAULT_INTERVAL_DURATIONS)[kind] });
       setActionError(null);
     } catch (cause) { setActionError(cause instanceof Error ? cause.message : "Could not start the timer."); }
   };
   const requestEnd = () => { if (timer?.phase === "running") setConfirmingEnd(true); else void end(); };
   const endTimer = async () => { await end(); setConfirmingEnd(false); };
-  const startBreak = async () => { dismissFinished(); setKind("shortBreak"); setIntention(""); await start({ kind: "shortBreak", taskId: null, taskTitleSnapshot: null, intention: "", durationSeconds: (preferences?.durations ?? DEFAULT_INTERVAL_DURATIONS).shortBreak, alertSound: preferences?.alertSound ?? null }); };
+  const startBreak = async () => { dismissFinished(); setKind("shortBreak"); setIntention(""); await start({ kind: "shortBreak", taskId: null, taskTitleSnapshot: null, intention: "", durationSeconds: (preferences?.durations ?? DEFAULT_INTERVAL_DURATIONS).shortBreak }); };
   const focusAgain = async () => {
     const task = finishedTimer?.taskId ? tasks.find((item) => item.id === finishedTimer.taskId) : null;
     if (!task || task.completions.includes(todayKey()) || !shouldShowToday(task)) { dismissFinished(); setSelectedTaskId(null); setKind("focus"); setActionError("Choose an open task before starting another focus round."); return; }
     dismissFinished(); setKind("focus"); setSelectedTaskId(task.id);
-    await start({ kind: "focus", taskId: task.id, taskTitleSnapshot: task.title, intention, durationSeconds: (preferences?.durations ?? DEFAULT_INTERVAL_DURATIONS).focus, alertSound: preferences?.alertSound ?? null });
+    await start({ kind: "focus", taskId: task.id, taskTitleSnapshot: task.title, intention, durationSeconds: (preferences?.durations ?? DEFAULT_INTERVAL_DURATIONS).focus });
   };
   const markDone = async () => {
     if (!user || !finishedTimer?.taskId) return;
@@ -81,7 +80,6 @@ export default function FocusScreen() {
     catch (cause) { setActionError(cause instanceof Error ? cause.message : "Could not mark this task done."); }
   };
   const changeDuration = (nextKind: IntervalKind, seconds: number) => { void setDuration(nextKind, seconds).then((updated) => { if (!updated) setActionError("Use a duration within the allowed range."); }); };
-  const chooseSound = async () => { const sound = await chooseAlertSound(); if (sound) await playAlertSound(sound).catch(() => setActionError("The sound was saved, but preview was not available on this device.")); };
   const error = actionError ?? tasksError ?? sessionsError ?? preferencesError ?? syncError;
   const displayTaskTitle = timer ? (activeTask?.title ?? timer.taskTitleSnapshot) : null;
 
@@ -97,7 +95,7 @@ export default function FocusScreen() {
       <TextInput label="Focus intention (optional)" value={intention} onChangeText={(value) => setIntention(value.slice(0, 120))} maxLength={120} mode="outlined" style={styles.input} dense placeholder="Draft the opening section" />
       <HelperText type="info" visible>{intention.length}/120</HelperText>
       <IntervalSettings durations={preferences?.durations ?? DEFAULT_INTERVAL_DURATIONS} disabled={preferencesLoading} onChange={changeDuration} />
-      <Surface style={styles.sound} elevation={0}><Text style={styles.soundTitle}>Interval alert</Text><Text style={styles.soundCopy}>{preferences?.alertSound ? preferences.alertSound.name : "Haptic confirmation only"}</Text><Button compact mode="text" icon="music-note-outline" onPress={() => void chooseSound()} disabled={preferencesLoading}>Choose sound</Button>{preferences?.alertSound && <Button compact mode="text" icon="close" onPress={() => void clearAlertSound()}>Use haptic only</Button>}</Surface>
+      <Surface style={styles.sound} elevation={0}><Text style={styles.soundTitle}>Interval alert</Text><Text style={styles.soundCopy}>Haptic confirmation</Text></Surface>
     </>}
     <FocusTimer timer={timer} remaining={remainingSeconds} selectedKind={kind} durations={preferences?.durations ?? DEFAULT_INTERVAL_DURATIONS} onSelectKind={setKind} onStart={() => void startTimer()} onPause={() => void pause()} onResume={() => void resume()} onEnd={requestEnd} disabled={restoring || preferencesLoading} startDisabled={kind === "focus" && !selectedTask} />
     {confirmingEnd && <Surface style={styles.endConfirm} elevation={0}><Text variant="titleMedium" style={styles.endTitle}>End this interval?</Text><Text style={styles.endCopy}>Focus time is saved only after one minute. This cannot be undone.</Text><Button mode="contained" buttonColor={colors.danger} onPress={() => void endTimer()}>End interval</Button><Button mode="text" onPress={() => setConfirmingEnd(false)}>Keep going</Button></Surface>}

@@ -2,13 +2,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AccessibilityInfo, AppState, type AppStateStatus } from "react-native";
-import { playAlertSound } from "@/lib/alert-sound";
 import { FOCUS_PENDING_STORAGE_KEY, FOCUS_TIMER_STORAGE_KEY, completedSession, durationFor, interruptedSession, isTimerFinished, pauseTimer, remainingSeconds, resumeTimer, type ActiveTimer, type FocusSessionDraft, type IntervalKind, validateFocusSessionDraft, validateStoredTimer } from "@/lib/focus-domain";
 import { saveFocusSession } from "@/lib/focus-sessions";
-import type { AlertSound } from "@/lib/focus-preferences";
 
 type PendingEnvelope = { ownerUid: string; sessions: FocusSessionDraft[] };
-type StartOptions = { kind: IntervalKind; taskId: string | null; taskTitleSnapshot: string | null; intention: string; durationSeconds?: number; alertSound?: AlertSound | null };
+type StartOptions = { kind: IntervalKind; taskId: string | null; taskTitleSnapshot: string | null; intention: string; durationSeconds?: number };
 
 const newIntervalId = () => `focus-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 const empty = () => AsyncStorage.removeItem(FOCUS_TIMER_STORAGE_KEY);
@@ -87,7 +85,6 @@ export function useFocusTimer(userId?: string) {
       await setActiveTimer(null);
       setFinishedTimer(active);
       setNowMs(currentNow);
-      void playAlertSound(active.alertSound ?? null).catch(() => undefined);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
       void AccessibilityInfo.announceForAccessibility("Timer complete. Choose your next step.");
     } catch (cause) {
@@ -150,7 +147,7 @@ export function useFocusTimer(userId?: string) {
     return () => { clearInterval(interval); subscription.remove(); };
   }, [checkTimer, retryPending]);
 
-  const start = useCallback(async ({ kind, taskId, taskTitleSnapshot, intention, durationSeconds: requestedDuration, alertSound }: StartOptions) => {
+  const start = useCallback(async ({ kind, taskId, taskTitleSnapshot, intention, durationSeconds: requestedDuration }: StartOptions) => {
     if (!userId) return;
     const now = Date.now();
     const durationSeconds = typeof requestedDuration === "number" && Number.isInteger(requestedDuration) && requestedDuration >= 60 && requestedDuration <= 14_400 ? requestedDuration : durationFor(kind);
@@ -158,7 +155,7 @@ export function useFocusTimer(userId?: string) {
     previousRemainingRef.current = durationSeconds;
     lastTickAtRef.current = now;
     setFinishedTimer(null);
-    await setActiveTimer({ version: 1, ownerUid: userId, intervalId: newIntervalId(), kind, taskId, taskTitleSnapshot, intention: intention.trim(), durationSeconds, startedAtMs: now, deadlineAtMs: now + durationSeconds * 1000, remainingWhenPausedSeconds: null, phase: "running", alertSound: alertSound ?? null });
+    await setActiveTimer({ version: 1, ownerUid: userId, intervalId: newIntervalId(), kind, taskId, taskTitleSnapshot, intention: intention.trim(), durationSeconds, startedAtMs: now, deadlineAtMs: now + durationSeconds * 1000, remainingWhenPausedSeconds: null, phase: "running", alertSound: null });
     setNowMs(now);
   }, [setActiveTimer, userId]);
 

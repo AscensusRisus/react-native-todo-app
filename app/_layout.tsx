@@ -5,7 +5,7 @@ import { ActivityIndicator, PaperProvider } from "react-native-paper";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { StatusBar } from "expo-status-bar";
 import { AppThemeProvider, useAppTheme } from "@/lib/app-theme-context";
-import { Platform, View } from "react-native";
+import { View } from "react-native";
 
 
 function RouteGuard({ children }: { children: React.ReactNode }) {
@@ -33,7 +33,7 @@ function ThemedRootLayout() {
   return (
       <PaperProvider theme={theme}>
         <SafeAreaProvider>
-         <StatusBar style={isDark ? "light" : "dark"} backgroundColor={colors.canvas} hidden={Platform.OS === "android"} />
+         <StatusBar style={isDark ? "light" : "dark"} backgroundColor={colors.canvas} />
          <RouteGuard>
             <Stack screenOptions={{ contentStyle: { backgroundColor: colors.canvas } }}>
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
