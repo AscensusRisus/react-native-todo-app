@@ -18,6 +18,7 @@ Users create an account, verify their email, then organise routines and one-time
 - Timestamp-based countdown recovery after backgrounding or restarting the app on the same device
 - Private, immutable focus-session history with duplicate-safe writes and retry-safe local syncing when a connection is unavailable
 - Account-scoped timer and pending-session storage with serialized delivery and bounded reconnect retries
+- Permission-gated local completion notifications that follow the active timer deadline and open Focus when tapped
 - Mobile-first layout intended for Android and iOS; native device verification remains part of the release checklist
 
 ## Tech stack
@@ -91,7 +92,7 @@ This runs TypeScript checking, linting across `app`, `components`, `hooks`, and 
 
 ## Current scope
 
-Focus intervals are local to the current device while active; they are not live-controlled across devices. The app does not use notifications or keep-awake behavior, so timer correctness comes from its stored deadline rather than the app staying open. Focus sessions retry locally after a temporary Firestore failure, while task mutations—including task completion—still require a connection and do not use the focus-session queue. Completing a focus interval never completes its linked task automatically. Current-day Focus and Progress totals include valid pending sessions stored for the signed-in account. The app intentionally does not yet include shared lists, a released store build, or automated Firebase security-rule tests.
+Focus intervals are local to the current device while active; they are not live-controlled across devices. Permission-gated local completion notifications follow the stored deadline, are cancelled/rescheduled around pause and resume, and fall back to haptic feedback when unavailable or denied. Notification delivery and operating-system restrictions have not yet been verified on a real device. The app does not use keep-awake behavior, so timer correctness comes from its stored deadline rather than the app staying open. Focus sessions retry locally after a temporary Firestore failure, while task mutations—including task completion—still require a connection and do not use the focus-session queue. Completing a focus interval never completes its linked task automatically. Current-day Focus and Progress totals include valid pending sessions stored for the signed-in account. The app intentionally does not yet include shared lists, remote push notifications, a released store build, or automated Firebase security-rule tests.
 
 ## Real-device checklist
 
@@ -107,3 +108,5 @@ Before publishing or recording a demo:
 8. Test a finished round while offline, reconnect, and confirm one focus session eventually appears in Firestore.
 9. Confirm that offline task completion reports an error rather than displaying a false success.
 10. Switch accounts with pending focus sessions and confirm each account sees only its own local queue.
+11. Grant and deny notification permission; confirm the timer remains usable in both cases.
+12. Lock the phone, let an interval finish, and tap the notification to return to Focus.
