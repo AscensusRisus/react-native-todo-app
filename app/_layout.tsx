@@ -1,4 +1,5 @@
 import { AuthProvider, useAuth } from "@/lib/auth-context";
+import * as Notifications from "expo-notifications";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { useEffect } from "react";
 import { ActivityIndicator, PaperProvider } from "react-native-paper";
@@ -29,7 +30,21 @@ function RouteGuard({ children }: { children: React.ReactNode }) {
 }
 
 function ThemedRootLayout() {
+  const router = useRouter();
   const { theme, colors, isDark } = useAppTheme();
+
+  useEffect(() => {
+    let alive = true;
+    const openNotificationRoute = (response: Notifications.NotificationResponse) => {
+      if (response.notification.request.content.data?.screen !== "focus") return;
+      router.push("/focus");
+      void Notifications.clearLastNotificationResponseAsync().catch(() => undefined);
+    };
+    const subscription = Notifications.addNotificationResponseReceivedListener(openNotificationRoute);
+    void Notifications.getLastNotificationResponseAsync().then((response) => { if (alive && response) openNotificationRoute(response); }).catch(() => undefined);
+    return () => { alive = false; subscription.remove(); };
+  }, [router]);
+
   return (
       <PaperProvider theme={theme}>
         <SafeAreaProvider>
