@@ -3,7 +3,7 @@ import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AccessibilityInfo, AppState, type AppStateStatus } from "react-native";
 import { FOCUS_PENDING_STORAGE_KEY, FOCUS_TIMER_STORAGE_KEY, completedSession, durationFor, interruptedSession, isTimerFinished, pauseTimer, remainingSeconds, resumeTimer, type ActiveTimer, type FocusSessionDraft, type IntervalKind, validateFocusSessionDraft, validateStoredTimer } from "@/lib/focus-domain";
-import { saveFocusSession } from "@/lib/focus-sessions";
+import { focusSessionSaveMessage, isRetryableFocusSessionError, saveFocusSession } from "@/lib/focus-sessions";
 
 type PendingEnvelope = { ownerUid: string; sessions: FocusSessionDraft[] };
 type StartOptions = { kind: IntervalKind; taskId: string | null; taskTitleSnapshot: string | null; intention: string; durationSeconds?: number };
@@ -23,6 +23,7 @@ export function useFocusTimer(userId?: string) {
   const finishingIdRef = useRef<string | null>(null);
   const previousRemainingRef = useRef<number | null>(null);
   const lastTickAtRef = useRef<number | null>(null);
+  const blockedPendingIdsRef = useRef<Set<string>>(new Set());
 
   const setActiveTimer = useCallback(async (next: ActiveTimer | null) => {
     timerRef.current = next;
@@ -64,8 +65,13 @@ export function useFocusTimer(userId?: string) {
     if (!pending.length) { setPendingCount(0); return; }
     const remaining: FocusSessionDraft[] = [];
     for (const session of pending) {
+      if (blockedPendingIdsRef.current.has(session.id)) { remaining.push(session); continue; }
       try { await saveFocusSession(userId, session); }
-      catch (cause) { remaining.push(session); setSyncError(cause instanceof Error ? cause.message : "Waiting to sync."); }
+      catch (cause) {
+        remaining.push(session);
+        if (!isRetryableFocusSessionError(cause)) blockedPendingIdsRef.current.add(session.id);
+        setSyncError(isRetryableFocusSessionError(cause) ? "Waiting to sync your focus session." : focusSessionSaveMessage(cause));
+      }
     }
     await writePending(remaining);
     if (!remaining.length) setSyncError(null);
@@ -113,6 +119,7 @@ export function useFocusTimer(userId?: string) {
     let alive = true;
     const restore = async () => {
       setRestoring(true);
+      blockedPendingIdsRef.current.clear();
       if (!userId) {
         if (alive) { timerRef.current = null; setTimer(null); setFinishedTimer(null); setPendingCount(0); setPendingSessions([]); setRestoring(false); }
         return;

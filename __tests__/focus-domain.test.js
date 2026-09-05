@@ -1,4 +1,4 @@
-import { completedSession, durationFor, focusSessionPayload, focusedSecondsForInterruptedTimer, interruptedSession, isTimerFinished, pauseTimer, remainingSeconds, resumeTimer, todayFocusSummary, validateFocusSessionDraft, validateStoredTimer } from "../lib/focus-domain";
+import { completedSession, durationFor, focusSessionPayload, focusedSecondsForInterruptedTimer, interruptedSession, isTimerFinished, pauseTimer, remainingSeconds, resumeTimer, sameFocusSessionContent, todayFocusSummary, validateFocusSessionDraft, validateStoredTimer } from "../lib/focus-domain";
 
 const running = (overrides = {}) => ({ version: 1, ownerUid: "user-1", intervalId: "interval-1", kind: "focus", taskId: "task-1", taskTitleSnapshot: "Draft", intention: "Opening", alertSound: null, durationSeconds: 1500, startedAtMs: 1_000, deadlineAtMs: 1_501_000, remainingWhenPausedSeconds: null, phase: "running", ...overrides });
 
@@ -56,6 +56,13 @@ describe("focus timer domain", () => {
     const payload = focusSessionPayload(session);
     expect(Object.keys(payload)).toEqual(["taskId", "taskTitleSnapshot", "intention", "kind", "status", "plannedSeconds", "focusedSeconds", "localDate", "startedAtMs", "endedAtMs"]);
     expect(payload).toMatchObject({ taskId: "task-1", taskTitleSnapshot: "Keep this title", intention: "Write clearly", plannedSeconds: 1500, focusedSeconds: 1500, startedAtMs: 1_000, endedAtMs: 1_501_000 });
+  });
+
+  it("accepts identical delivery and rejects same-ID content changes", () => {
+    const session = completedSession(running(), 1_501_000);
+    expect(sameFocusSessionContent(session, { ...session })).toBe(true);
+    expect(sameFocusSessionContent(session, { ...session, intention: "Changed after delivery" })).toBe(false);
+    expect(sameFocusSessionContent(session, { ...session, endedAtMs: 1_502_000 })).toBe(false);
   });
 
   it("accepts only complete, bounded pending session records", () => {

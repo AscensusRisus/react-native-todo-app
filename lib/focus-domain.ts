@@ -98,6 +98,12 @@ export function focusSessionPayload(session: FocusSessionDraft) {
   };
 }
 
+export function sameFocusSessionContent(left: FocusSessionDraft, right: FocusSessionDraft) {
+  const a = focusSessionPayload(left);
+  const b = focusSessionPayload(right);
+  return Object.keys(a).every((key) => a[key as keyof typeof a] === b[key as keyof typeof b]);
+}
+
 export function validateFocusSessionDraft(value: unknown): FocusSessionDraft | null {
   if (!value || typeof value !== "object") return null;
   const item = value as Record<string, unknown>;
