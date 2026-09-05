@@ -1,9 +1,10 @@
-import { collection, doc, onSnapshot, orderBy, query, runTransaction, serverTimestamp, Timestamp, type Firestore } from "firebase/firestore";
+import { collection, doc, onSnapshot, orderBy, query, runTransaction, serverTimestamp, Timestamp, where, type Firestore } from "firebase/firestore";
 import { db, firebaseSetupError } from "./firebase";
 import { readableDataError } from "./error-messages";
 import { focusSessionPayload, sameFocusSessionContent, validateFocusSessionDraft, type FocusSessionDraft, type IntervalKind } from "./focus-domain";
 
 export type FocusSession = Omit<FocusSessionDraft, "id" | "startedAtMs" | "endedAtMs"> & { id: string; endedAtMs?: number };
+export type FocusSessionDateRange = { startLocalDate: string; endExclusiveLocalDate: string };
 
 const retryableCodes = new Set(["aborted", "deadline-exceeded", "internal", "resource-exhausted", "unavailable"]);
 
@@ -99,6 +100,9 @@ export async function saveFocusSession(userId: string, session: FocusSessionDraf
   }
 }
 
-export function subscribeToFocusSessions(userId: string, onChange: (sessions: FocusSession[]) => void, onError: (message: string) => void) {
-  return onSnapshot(query(sessionsCollection(userId), orderBy("endedAt", "desc")), (snapshot) => onChange(snapshot.docs.map((item) => fromSnapshot(item.id, item.data())).filter((item): item is FocusSession => item !== null)), (error) => onError(readableDataError(error, "Could not load your focus history.")));
+export function subscribeToFocusSessions(userId: string, onChange: (sessions: FocusSession[]) => void, onError: (message: string) => void, dateRange?: FocusSessionDateRange) {
+  const sessionsQuery = dateRange
+    ? query(sessionsCollection(userId), where("localDate", ">=", dateRange.startLocalDate), where("localDate", "<", dateRange.endExclusiveLocalDate))
+    : query(sessionsCollection(userId), orderBy("endedAt", "desc"));
+  return onSnapshot(sessionsQuery, (snapshot) => onChange(snapshot.docs.map((item) => fromSnapshot(item.id, item.data())).filter((item): item is FocusSession => item !== null)), (error) => onError(readableDataError(error, "Could not load your focus history.")));
 }
