@@ -12,6 +12,8 @@ type PendingEnvelope = { ownerUid: string; sessions: FocusSessionDraft[] };
 type StartOptions = { kind: IntervalKind; taskId: string | null; taskTitleSnapshot: string | null; intention: string; durationSeconds?: number };
 
 const newIntervalId = () => `focus-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+const TIMER_STORAGE_ERROR = "Could not save the timer on this device. Try again.";
+const PENDING_STORAGE_ERROR = "Could not save pending focus data on this device. Try again.";
 
 export function useFocusTimer(userId?: string) {
   const currentUserIdRef = useRef(userId);
@@ -34,13 +36,18 @@ export function useFocusTimer(userId?: string) {
 
   const setActiveTimer = useCallback(async (next: ActiveTimer | null) => {
     if (!userId) return;
+    const key = focusTimerStorageKey(userId);
+    try {
+      if (next) await AsyncStorage.setItem(key, JSON.stringify(next));
+      else await AsyncStorage.removeItem(key);
+    } catch {
+      if (currentUserIdRef.current === userId) setSyncError(TIMER_STORAGE_ERROR);
+      throw new Error(TIMER_STORAGE_ERROR);
+    }
     if (currentUserIdRef.current === userId) {
       timerRef.current = next;
       setTimer(next);
     }
-    const key = focusTimerStorageKey(userId);
-    if (next) await AsyncStorage.setItem(key, JSON.stringify(next));
-    else await AsyncStorage.removeItem(key);
   }, [userId]);
 
   const readPending = useCallback(async (): Promise<FocusSessionDraft[]> => {
@@ -65,12 +72,17 @@ export function useFocusTimer(userId?: string) {
 
   const writePending = useCallback(async (sessions: FocusSessionDraft[]) => {
     if (!userId) return;
+    try {
+      if (sessions.length) await AsyncStorage.setItem(focusPendingStorageKey(userId), JSON.stringify({ ownerUid: userId, sessions }));
+      else await AsyncStorage.removeItem(focusPendingStorageKey(userId));
+    } catch {
+      if (currentUserIdRef.current === userId) setSyncError(PENDING_STORAGE_ERROR);
+      throw new Error(PENDING_STORAGE_ERROR);
+    }
     if (currentUserIdRef.current === userId) {
       setPendingCount(sessions.length);
       setPendingSessions(sessions);
     }
-    if (sessions.length) await AsyncStorage.setItem(focusPendingStorageKey(userId), JSON.stringify({ ownerUid: userId, sessions }));
-    else await AsyncStorage.removeItem(focusPendingStorageKey(userId));
   }, [userId]);
 
   const migrateLegacyStorage = useCallback(async () => {
@@ -164,7 +176,7 @@ export function useFocusTimer(userId?: string) {
       void AccessibilityInfo.announceForAccessibility("Timer complete. Choose your next step.");
     } catch (cause) {
       finishingIdRef.current = null;
-      setSyncError(cause instanceof Error ? cause.message : "Could not save the completed timer yet.");
+      if (currentUserIdRef.current === active.ownerUid) setSyncError(cause instanceof Error ? cause.message : "Could not save the completed timer yet.");
     }
   }, [enqueueSession, setActiveTimer]);
 
@@ -247,7 +259,7 @@ export function useFocusTimer(userId?: string) {
     const next = pauseTimer(active, now);
     previousRemainingRef.current = remainingSeconds(next, now);
     lastTickAtRef.current = now;
-    await setActiveTimer(next);
+    try { await setActiveTimer(next); } catch { return; }
     setNowMs(now);
   }, [finish, setActiveTimer]);
   const resume = useCallback(async () => {
@@ -257,7 +269,7 @@ export function useFocusTimer(userId?: string) {
     const next = resumeTimer(active, now);
     previousRemainingRef.current = remainingSeconds(next, now);
     lastTickAtRef.current = now;
-    await setActiveTimer(next);
+    try { await setActiveTimer(next); } catch { return; }
     setNowMs(now);
   }, [setActiveTimer]);
   const end = useCallback(async () => {
@@ -268,16 +280,16 @@ export function useFocusTimer(userId?: string) {
     const session = interruptedSession(active, endedAtMs);
     if (session) {
       try { await enqueueSession(session); }
-      catch (cause) { setSyncError(cause instanceof Error ? cause.message : "Could not save the interrupted timer yet."); return; }
+      catch (cause) { if (currentUserIdRef.current === active.ownerUid) setSyncError(cause instanceof Error ? cause.message : "Could not save the interrupted timer yet."); return; }
     }
-    await setActiveTimer(null);
+    try { await setActiveTimer(null); } catch { return; }
     finishingIdRef.current = null;
     setFinishedTimer(null);
   }, [enqueueSession, finish, setActiveTimer]);
   const unlinkTask = useCallback(async (taskId: string) => {
     const active = timerRef.current;
     if (!active || active.taskId !== taskId) return;
-    await setActiveTimer({ ...active, taskId: null });
+    try { await setActiveTimer({ ...active, taskId: null }); } catch { /* setActiveTimer surfaces the storage error. */ }
   }, [setActiveTimer]);
   const dismissFinished = useCallback(() => { setFinishedTimer(null); finishingIdRef.current = null; }, []);
 
