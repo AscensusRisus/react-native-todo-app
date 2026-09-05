@@ -5,7 +5,7 @@ import { ActivityIndicator, Button, Chip, IconButton, Text } from "react-native-
 import { AppScreen } from "@/components/app-screen";
 import { TaskForm } from "@/components/task-form";
 import { useAuth } from "@/lib/auth-context";
-import { dueDateLabel, removeTask, setTaskCompleted, taskDateState, todayKey, updateTask, type TaskDraft } from "@/lib/habits";
+import { dueDateLabel, isTaskCompletedOnDate, removeTask, setTaskCompleted, taskDateState, todayKey, updateTask, type TaskDraft } from "@/lib/habits";
 import { useTask } from "@/hooks/use-tasks";
 import { useAppTheme } from "@/lib/app-theme-context";
 
@@ -33,7 +33,7 @@ export default function TaskDetailScreen() {
   const toggle = async () => {
     if (!user || !task) return;
     try {
-      await setTaskCompleted(user.uid, task.id, todayKey(), !task.completions.includes(todayKey()));
+      await setTaskCompleted(user.uid, task.id, todayKey(), !isTaskCompletedOnDate(task, todayKey()));
     } catch (cause) {
       setActionError(cause instanceof Error ? cause.message : "Could not update this task.");
     }
@@ -55,7 +55,7 @@ export default function TaskDetailScreen() {
   if (loading) return <AppScreen><ActivityIndicator style={styles.loader} /></AppScreen>;
   if (!task) return <AppScreen><Text variant="headlineSmall" style={styles.heading}>Task not found</Text><Text style={styles.lead}>{error ?? "It may have been deleted in another session."}</Text><Button mode="contained" onPress={() => router.replace("/")}>Back to today</Button></AppScreen>;
 
-  const done = task.completions.includes(todayKey());
+  const done = isTaskCompletedOnDate(task, todayKey());
   const dateState = taskDateState(task);
   const initialValue: TaskDraft = { title: task.title, notes: task.notes, category: task.category, schedule: task.schedule, priority: task.priority, dueDate: task.dueDate };
   return (

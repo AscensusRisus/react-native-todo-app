@@ -7,7 +7,7 @@ import { AppScreen } from "@/components/app-screen";
 import { TaskCard } from "@/components/task-card";
 import { useTasks } from "@/hooks/use-tasks";
 import { useAuth } from "@/lib/auth-context";
-import { dueDateLabel, removeTask, setTaskCompleted, shouldShowToday, taskDateState, todayKey, type Task } from "@/lib/habits";
+import { dueDateLabel, isTaskCompletedOnDate, removeTask, setTaskCompleted, shouldShowToday, taskDateState, todayKey, type Task } from "@/lib/habits";
 import { useAppTheme } from "@/lib/app-theme-context";
 
 type Filter = "all" | "open" | "done";
@@ -24,13 +24,13 @@ export default function TodayScreen() {
   const error = actionError ?? loadError;
 
   const todaysTasks = useMemo(() => habits.filter((task) => shouldShowToday(task)), [habits]);
-  const completed = todaysTasks.filter((task) => task.completions.includes(today)).length;
-  const visibleTasks = todaysTasks.filter((task) => filter === "all" || (filter === "done") === task.completions.includes(today));
+  const completed = todaysTasks.filter((task) => isTaskCompletedOnDate(task, today)).length;
+  const visibleTasks = todaysTasks.filter((task) => filter === "all" || (filter === "done") === isTaskCompletedOnDate(task, today));
   const progress = todaysTasks.length ? completed / todaysTasks.length : 0;
 
   const toggleTask = async (task: Task) => {
     if (!user) return;
-    try { await setTaskCompleted(user.uid, task.id, today, !task.completions.includes(today)); setActionError(null); }
+    try { await setTaskCompleted(user.uid, task.id, today, !isTaskCompletedOnDate(task, today)); setActionError(null); }
     catch (cause) { setActionError(cause instanceof Error ? cause.message : "Could not update this task."); }
   };
 

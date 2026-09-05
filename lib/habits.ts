@@ -14,7 +14,7 @@ import { db, firebaseSetupError } from "./firebase";
 import { isDateKey, isTaskCategory, isTaskPriority, isTaskSchedule, nextCompletionDates, validateTaskDraft, type TaskDraft } from "./task-domain";
 
 export type { TaskDraft, TaskPriority, TaskSchedule } from "./task-domain";
-export { dateAfter, dateKey, defaultTaskDraft, dueDateLabel, isDateKey, isTaskCategory, isTaskOpenToday, isTaskPriority, isTaskSchedule, lastSevenDays, longestStreak, nextCompletionDates, scheduleLabel, shouldShowToday, streakFor, taskDateState, todayKey, validateTaskDraft } from "./task-domain";
+export { dateAfter, dateKey, defaultTaskDraft, dueDateLabel, isDateKey, isTaskCategory, isTaskCompletedOnDate, isTaskOpenToday, isTaskPriority, isTaskSchedule, lastSevenDays, longestStreak, nextCompletionDates, scheduleLabel, shouldShowToday, streakFor, taskDateState, todayKey, validateTaskDraft } from "./task-domain";
 
 export type Task = TaskDraft & {
   id: string;

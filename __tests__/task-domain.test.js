@@ -1,5 +1,6 @@
 import {
   isDateKey,
+  isTaskCompletedOnDate,
   isTaskOpenToday,
   longestStreak,
   nextCompletionDates,
@@ -46,6 +47,20 @@ describe("task domain rules", () => {
     expect(nextCompletionDates({ schedule: "once", completions: [] }, "2026-08-28", true)).toEqual(["2026-08-28"]);
     expect(nextCompletionDates({ schedule: "once", completions: ["2026-08-27"] }, "2026-08-28", true)).toEqual(["2026-08-27"]);
     expect(nextCompletionDates({ schedule: "once", completions: ["2026-08-27"] }, "2026-08-28", false)).toEqual([]);
+  });
+
+  it("uses one-time history and recurring daily completion rules consistently", () => {
+    const oneTimeDoneYesterday = { schedule: "once", dueDate: "2026-08-27", completions: ["2026-08-27"] };
+    expect(isTaskCompletedOnDate(oneTimeDoneYesterday, "2026-08-28")).toBe(true);
+    expect(isTaskOpenToday(oneTimeDoneYesterday, new Date("2026-08-28T12:00:00"))).toBe(false);
+
+    const dailyDoneYesterday = { schedule: "daily", completions: ["2026-08-27"] };
+    expect(isTaskCompletedOnDate(dailyDoneYesterday, "2026-08-28")).toBe(false);
+    expect(isTaskOpenToday(dailyDoneYesterday, new Date("2026-08-28T12:00:00"))).toBe(true);
+
+    const dailyDoneToday = { schedule: "daily", completions: ["2026-08-28"] };
+    expect(isTaskCompletedOnDate(dailyDoneToday, "2026-08-28")).toBe(true);
+    expect(isTaskOpenToday(dailyDoneToday, new Date("2026-08-28T12:00:00"))).toBe(false);
   });
 
   it("labels overdue, today, and upcoming one-time tasks", () => {

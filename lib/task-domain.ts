@@ -82,8 +82,14 @@ export function shouldShowToday(task: TaskLike, date = new Date()) {
   return true;
 }
 
+export function isTaskCompletedOnDate(task: TaskLike, date: Date | string = new Date()) {
+  const target = typeof date === "string" ? date : dateKey(date);
+  if (task.schedule === "once") return task.completions.some(isDateKey);
+  return task.completions.includes(target);
+}
+
 export function isTaskOpenToday(task: TaskLike, date = new Date()) {
-  return shouldShowToday(task, date) && !(task.schedule === "once" && task.completions.length > 0);
+  return shouldShowToday(task, date) && !isTaskCompletedOnDate(task, date);
 }
 
 export function nextCompletionDates(task: TaskLike, date: string, completed: boolean) {

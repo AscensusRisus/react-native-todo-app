@@ -2,7 +2,7 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useState } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
 import { IconButton, Menu, Surface, Text } from "react-native-paper";
-import { scheduleLabel, type Task } from "@/lib/habits";
+import { isTaskCompletedOnDate, scheduleLabel, type Task } from "@/lib/habits";
 import { categoryColors } from "@/lib/theme";
 import { useAppTheme } from "@/lib/app-theme-context";
 
@@ -19,7 +19,7 @@ export function TaskCard({ task, today, onToggle, onEdit, onDelete, onStartFocus
   const [menuVisible, setMenuVisible] = useState(false);
   const { colors } = useAppTheme();
   const styles = makeStyles(colors);
-  const done = task.completions.includes(today);
+  const done = isTaskCompletedOnDate(task, today);
   const accent = categoryColors[task.category ?? "Personal"] ?? colors.primary;
   const priorityLabel = task.priority === "high" ? "High priority" : task.priority === "low" ? "Low priority" : "Normal priority";
 
