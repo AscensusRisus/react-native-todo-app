@@ -13,6 +13,7 @@ export type TaskDraft = {
 export type TaskLike = {
   schedule?: TaskSchedule;
   dueDate?: string | null;
+  createdDate?: string;
   completions: string[];
 };
 
@@ -72,12 +73,14 @@ export function taskDateState(task: TaskLike, date = new Date()) {
 
 export function shouldShowToday(task: TaskLike, date = new Date()) {
   const schedule = task.schedule ?? "daily";
+  const target = dateKey(date);
+  if (task.createdDate && isDateKey(task.createdDate) && task.createdDate > target) return false;
   const day = date.getDay();
   if (schedule === "weekdays") return day >= 1 && day <= 5;
   if (schedule === "weekends") return day === 0 || day === 6;
   if (schedule === "once") {
-    if (task.completions.includes(dateKey(date))) return true;
-    return !task.dueDate || task.dueDate <= dateKey(date);
+    if (task.completions.includes(target)) return true;
+    return !task.dueDate || task.dueDate <= target;
   }
   return true;
 }
