@@ -208,7 +208,7 @@ export function useFocusTimer(userId?: string) {
       if (currentUserIdRef.current !== active.ownerUid) return;
       setFinishedTimer(active);
       setNowMs(currentNow);
-      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+      if (AppState.currentState === "active") void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
       void AccessibilityInfo.announceForAccessibility("Timer complete. Choose your next step.");
     } catch (cause) {
       finishingIdRef.current = null;

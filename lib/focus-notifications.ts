@@ -1,16 +1,19 @@
 import * as Notifications from "expo-notifications";
-import { Platform } from "react-native";
+import { AppState, Platform } from "react-native";
 import type { ActiveTimer } from "./focus-domain";
 
 export const FOCUS_NOTIFICATION_CHANNEL_ID = "focus-completion";
 
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-  }),
+  handleNotification: async () => {
+    const inForeground = AppState.currentState === "active";
+    return {
+      shouldShowBanner: !inForeground,
+      shouldShowList: !inForeground,
+      shouldPlaySound: !inForeground,
+      shouldSetBadge: false,
+    };
+  },
 });
 
 async function requestNotificationPermission() {
