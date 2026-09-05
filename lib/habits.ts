@@ -11,7 +11,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db, firebaseSetupError } from "./firebase";
-import { isDateKey, isTaskCategory, isTaskPriority, isTaskSchedule, nextCompletionDates, validateTaskDraft, type TaskDraft } from "./task-domain";
+import { dateKey, isDateKey, isTaskCategory, isTaskPriority, isTaskSchedule, nextCompletionDates, validateTaskDraft, type TaskDraft } from "./task-domain";
 
 export type { TaskDraft, TaskPriority, TaskSchedule } from "./task-domain";
 export { dateAfter, dateKey, defaultTaskDraft, dueDateLabel, isDateKey, isTaskCategory, isTaskCompletedOnDate, isTaskOpenToday, isTaskPriority, isTaskSchedule, lastSevenDays, longestStreak, nextCompletionDates, scheduleLabel, shouldShowToday, streakFor, taskDateState, todayKey, validateTaskDraft } from "./task-domain";
@@ -64,7 +64,7 @@ export async function createTask(userId: string, task: TaskDraft) {
   const validationError = validateTaskDraft(task);
   if (validationError) throw new Error(validationError);
   const taskRef = doc(tasksCollection(userId));
-  await setDoc(taskRef, { ...task, title: task.title.trim(), notes: task.notes.trim(), createdDate: new Date().toISOString().slice(0, 10), completions: [], createdAt: serverTimestamp() });
+  await setDoc(taskRef, { ...task, title: task.title.trim(), notes: task.notes.trim(), createdDate: dateKey(), completions: [], createdAt: serverTimestamp() });
 }
 
 export async function updateTask(userId: string, taskId: string, task: TaskDraft) {
