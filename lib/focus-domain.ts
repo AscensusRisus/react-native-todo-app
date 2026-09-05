@@ -105,6 +105,22 @@ export function sameFocusSessionContent(left: FocusSessionDraft, right: FocusSes
   return Object.keys(a).every((key) => a[key as keyof typeof a] === b[key as keyof typeof b]);
 }
 
+type FocusSessionSummaryLike = {
+  id: string;
+  localDate: string;
+  status: "completed" | "interrupted";
+  kind: IntervalKind;
+  focusedSeconds: number;
+};
+
+export function mergeFocusSessionsById<
+  TServer extends FocusSessionSummaryLike,
+  TPending extends FocusSessionSummaryLike,
+>(serverSessions: TServer[], pendingSessions: TPending[]) {
+  const seen = new Set(serverSessions.map((session) => session.id));
+  return [...serverSessions, ...pendingSessions.filter((session) => !seen.has(session.id))];
+}
+
 export function validateFocusSessionDraft(value: unknown): FocusSessionDraft | null {
   if (!value || typeof value !== "object") return null;
   const item = value as Record<string, unknown>;

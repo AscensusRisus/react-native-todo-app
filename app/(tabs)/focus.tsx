@@ -25,9 +25,9 @@ export default function FocusScreen() {
   const router = useRouter();
   const { tasks, loading, error: tasksError } = useTasks(user?.uid);
   const today = useTodayKey();
-  const { summary, error: sessionsError } = useFocusSessions(user?.uid);
   const { preferences, loading: preferencesLoading, error: preferencesError, setDuration } = useFocusPreferences(user?.uid);
   const { timer, remainingSeconds, finishedTimer, pendingCount, pendingSessions, syncError, restoring, start, pause, resume, end, unlinkTask, dismissFinished, retryPending } = useFocusTimer(user?.uid);
+  const { summary, error: sessionsError } = useFocusSessions(user?.uid, pendingSessions);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [kind, setKind] = useState<IntervalKind>("focus");
   const [intention, setIntention] = useState("");
@@ -40,10 +40,6 @@ export default function FocusScreen() {
   const finishedTask = finishedTimer?.taskId ? tasks.find((task) => task.id === finishedTimer.taskId) ?? null : null;
   const timerTaskMissing = !!timer?.taskId && !activeTask;
   const timerTaskDone = !!activeTask && isTaskCompletedOnDate(activeTask, today);
-  const displayedSummary = useMemo(() => {
-    const pendingFocus = pendingSessions.filter((session) => session.localDate === today && session.status === "completed" && session.kind === "focus");
-    return { rounds: summary.rounds + pendingFocus.length, focusedMinutes: summary.focusedMinutes + Math.floor(pendingFocus.reduce((total, session) => total + session.focusedSeconds, 0) / 60) };
-  }, [pendingSessions, summary, today]);
 
   useEffect(() => {
     if (timer?.taskId && !loading && !activeTask) void unlinkTask(timer.taskId);
@@ -88,7 +84,7 @@ export default function FocusScreen() {
   return <AppScreen>
     <Text style={styles.eyebrow}>FOCUS ON ONE THING</Text>
     <Text variant="headlineMedium" style={styles.heading}>Focus</Text>
-    <Text style={styles.summary}>{displayedSummary.rounds} {displayedSummary.rounds === 1 ? "round" : "rounds"} · {displayedSummary.focusedMinutes} focused minutes</Text>
+    <Text style={styles.summary}>{summary.rounds} {summary.rounds === 1 ? "round" : "rounds"} · {summary.focusedMinutes} focused minutes</Text>
     {(pendingCount > 0 || syncError) && <Surface style={styles.sync} elevation={0}><Text style={styles.syncText}>Waiting to sync {pendingCount === 1 ? "1 session" : `${pendingCount} sessions`}. Your timer data is safe on this device.</Text></Surface>}
     {!!displayTaskTitle && <Surface style={styles.activeTask} elevation={0}><Text style={styles.activeTaskLabel}>FOCUSING ON</Text><Text variant="titleMedium" style={styles.activeTaskTitle}>{displayTaskTitle}{timerTaskDone ? " · completed" : ""}</Text>{timerTaskMissing && <Text style={styles.warning}>This task was deleted. The interval can finish, but choose another task for your next focus round.</Text>}</Surface>}
     {!timer && <>
