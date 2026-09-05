@@ -47,3 +47,13 @@ export async function scheduleFocusCompletionNotification(timer: ActiveTimer) {
 export async function cancelFocusCompletionNotification(notificationId: string | null | undefined) {
   if (notificationId) await Notifications.cancelScheduledNotificationAsync(notificationId);
 }
+
+export async function hasScheduledFocusCompletionNotification(notificationId: string | null | undefined) {
+  if (!notificationId) return false;
+  try {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    return scheduled.some((request) => request.identifier === notificationId);
+  } catch {
+    return false;
+  }
+}

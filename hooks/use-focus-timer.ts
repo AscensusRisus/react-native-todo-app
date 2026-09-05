@@ -6,7 +6,7 @@ import { FOCUS_PENDING_STORAGE_KEY, FOCUS_TIMER_STORAGE_KEY, completedSession, d
 import { focusPendingStorageKey, focusTimerStorageKey, ownedLegacyRecord } from "@/lib/focus-storage";
 import { INITIAL_RETRY_DELAY_MS, nextRetryDelay } from "@/lib/retry-backoff";
 import { focusSessionSaveMessage, isRetryableFocusSessionError, saveFocusSession } from "@/lib/focus-sessions";
-import { cancelFocusCompletionNotification, scheduleFocusCompletionNotification } from "@/lib/focus-notifications";
+import { cancelFocusCompletionNotification, hasScheduledFocusCompletionNotification, scheduleFocusCompletionNotification } from "@/lib/focus-notifications";
 import { createSerialQueue } from "@/lib/serial-queue";
 
 type PendingEnvelope = { ownerUid: string; sessions: FocusSessionDraft[] };
@@ -239,6 +239,11 @@ export function useFocusTimer(userId?: string) {
       blockedPendingIdsRef.current.clear();
       nextRetryAtRef.current = 0;
       retryDelayRef.current = INITIAL_RETRY_DELAY_MS;
+      const previousTimer = timerRef.current;
+      if (previousTimer && previousTimer.ownerUid !== userId) {
+        await cancelFocusCompletionNotification(previousTimer.completionNotificationId).catch(() => undefined);
+        timerRef.current = null;
+      }
       if (!userId) {
         if (alive) { timerRef.current = null; setTimer(null); setFinishedTimer(null); setPendingCount(0); setPendingSessions([]); setNotificationNotice(null); setRestoring(false); }
         return;
@@ -252,7 +257,7 @@ export function useFocusTimer(userId?: string) {
       timerRef.current = restored;
       setTimer(restored);
       setFinishedTimer(null);
-      if (restored?.phase === "running" && restored.deadlineAtMs !== null && restored.deadlineAtMs > Date.now() && !restored.completionNotificationId) restored = await scheduleNotification(restored);
+      if (restored?.phase === "running" && restored.deadlineAtMs !== null && restored.deadlineAtMs > Date.now() && !(await hasScheduledFocusCompletionNotification(restored.completionNotificationId))) restored = await scheduleNotification({ ...restored, completionNotificationId: null });
       const restoredPending = await readPending();
       if (!alive || currentUserIdRef.current !== userId) return;
       setPendingCount(restoredPending.length);
