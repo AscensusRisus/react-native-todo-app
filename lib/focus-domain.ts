@@ -72,11 +72,12 @@ export function focusedSecondsForInterruptedTimer(timer: ActiveTimer, nowMs: num
 }
 
 export function completedSession(timer: ActiveTimer, endedAtMs: number): FocusSessionDraft {
+  const completionAtMs = timer.phase === "running" && timer.deadlineAtMs !== null && timer.deadlineAtMs <= endedAtMs ? timer.deadlineAtMs : endedAtMs;
   return {
     id: timer.intervalId, taskId: timer.taskId, taskTitleSnapshot: timer.taskTitleSnapshot,
     intention: timer.intention, kind: timer.kind, status: "completed", plannedSeconds: timer.durationSeconds,
     focusedSeconds: timer.kind === "focus" ? timer.durationSeconds : 0,
-    localDate: dateKey(new Date(endedAtMs)), startedAtMs: timer.startedAtMs, endedAtMs,
+    localDate: dateKey(new Date(completionAtMs)), startedAtMs: timer.startedAtMs, endedAtMs: completionAtMs,
   };
 }
 

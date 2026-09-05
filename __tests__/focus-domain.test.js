@@ -44,7 +44,7 @@ describe("focus timer domain", () => {
 
   it("summarizes only completed focus sessions from today", () => {
     const sessions = [
-      completedSession(running(), new Date("2026-09-02T12:00:00").getTime()),
+      completedSession(running({ startedAtMs: new Date("2026-09-02T11:35:00").getTime(), deadlineAtMs: new Date("2026-09-02T12:00:00").getTime() }), new Date("2026-09-02T12:00:00").getTime()),
       { ...completedSession(running({ intervalId: "break", kind: "shortBreak" }), new Date("2026-09-02T13:00:00").getTime()), kind: "shortBreak" },
       { ...completedSession(running({ intervalId: "old" }), new Date("2026-09-01T13:00:00").getTime()), localDate: "2026-09-01" },
     ];
@@ -63,6 +63,13 @@ describe("focus timer domain", () => {
     expect(sameFocusSessionContent(session, { ...session })).toBe(true);
     expect(sameFocusSessionContent(session, { ...session, intention: "Changed after delivery" })).toBe(false);
     expect(sameFocusSessionContent(session, { ...session, endedAtMs: 1_502_000 })).toBe(false);
+  });
+
+  it("attributes a completed round to its stored deadline after a late reopen", () => {
+    const timer = running({ startedAtMs: new Date("2026-09-05T23:00:00").getTime(), deadlineAtMs: new Date("2026-09-05T23:25:00").getTime() });
+    const session = completedSession(timer, new Date("2026-09-06T08:00:00").getTime());
+    expect(session.endedAtMs).toBe(new Date("2026-09-05T23:25:00").getTime());
+    expect(session.localDate).toBe("2026-09-05");
   });
 
   it("accepts only complete, bounded pending session records", () => {
