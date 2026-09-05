@@ -3,13 +3,13 @@ import * as Haptics from "expo-haptics";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AccessibilityInfo, AppState, type AppStateStatus } from "react-native";
 import { FOCUS_PENDING_STORAGE_KEY, FOCUS_TIMER_STORAGE_KEY, completedSession, durationFor, interruptedSession, isTimerFinished, pauseTimer, remainingSeconds, resumeTimer, type ActiveTimer, type FocusSessionDraft, type IntervalKind, validateFocusSessionDraft, validateStoredTimer } from "@/lib/focus-domain";
+import { focusPendingStorageKey, focusTimerStorageKey, ownedLegacyRecord } from "@/lib/focus-storage";
 import { focusSessionSaveMessage, isRetryableFocusSessionError, saveFocusSession } from "@/lib/focus-sessions";
 
 type PendingEnvelope = { ownerUid: string; sessions: FocusSessionDraft[] };
 type StartOptions = { kind: IntervalKind; taskId: string | null; taskTitleSnapshot: string | null; intention: string; durationSeconds?: number };
 
 const newIntervalId = () => `focus-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-const empty = () => AsyncStorage.removeItem(FOCUS_TIMER_STORAGE_KEY);
 
 export function useFocusTimer(userId?: string) {
   const [timer, setTimer] = useState<ActiveTimer | null>(null);
@@ -26,37 +26,69 @@ export function useFocusTimer(userId?: string) {
   const blockedPendingIdsRef = useRef<Set<string>>(new Set());
 
   const setActiveTimer = useCallback(async (next: ActiveTimer | null) => {
+    if (!userId) return;
     timerRef.current = next;
     setTimer(next);
-    if (next) await AsyncStorage.setItem(FOCUS_TIMER_STORAGE_KEY, JSON.stringify(next));
-    else await empty();
-  }, []);
+    const key = focusTimerStorageKey(userId);
+    if (next) await AsyncStorage.setItem(key, JSON.stringify(next));
+    else await AsyncStorage.removeItem(key);
+  }, [userId]);
 
   const readPending = useCallback(async (): Promise<FocusSessionDraft[]> => {
-    const raw = await AsyncStorage.getItem(FOCUS_PENDING_STORAGE_KEY);
+    if (!userId) return [];
+    const raw = await AsyncStorage.getItem(focusPendingStorageKey(userId));
     if (!raw) return [];
     try {
       const envelope = JSON.parse(raw) as PendingEnvelope;
       if (envelope.ownerUid !== userId || !Array.isArray(envelope.sessions)) {
-        await AsyncStorage.removeItem(FOCUS_PENDING_STORAGE_KEY);
+        await AsyncStorage.removeItem(focusPendingStorageKey(userId));
         return [];
       }
       const valid = envelope.sessions.map(validateFocusSessionDraft).filter((session): session is FocusSessionDraft => session !== null);
       if (valid.length !== envelope.sessions.length) {
         setSyncError("One invalid pending focus record was discarded locally.");
-        if (valid.length) await AsyncStorage.setItem(FOCUS_PENDING_STORAGE_KEY, JSON.stringify({ ownerUid: userId, sessions: valid }));
-        else await AsyncStorage.removeItem(FOCUS_PENDING_STORAGE_KEY);
+        if (valid.length) await AsyncStorage.setItem(focusPendingStorageKey(userId), JSON.stringify({ ownerUid: userId, sessions: valid }));
+        else await AsyncStorage.removeItem(focusPendingStorageKey(userId));
       }
       return valid;
-    } catch { await AsyncStorage.removeItem(FOCUS_PENDING_STORAGE_KEY); return []; }
+    } catch { await AsyncStorage.removeItem(focusPendingStorageKey(userId)); return []; }
   }, [userId]);
 
   const writePending = useCallback(async (sessions: FocusSessionDraft[]) => {
     if (!userId) return;
     setPendingCount(sessions.length);
     setPendingSessions(sessions);
-    if (sessions.length) await AsyncStorage.setItem(FOCUS_PENDING_STORAGE_KEY, JSON.stringify({ ownerUid: userId, sessions }));
-    else await AsyncStorage.removeItem(FOCUS_PENDING_STORAGE_KEY);
+    if (sessions.length) await AsyncStorage.setItem(focusPendingStorageKey(userId), JSON.stringify({ ownerUid: userId, sessions }));
+    else await AsyncStorage.removeItem(focusPendingStorageKey(userId));
+  }, [userId]);
+
+  const migrateLegacyStorage = useCallback(async () => {
+    if (!userId) return;
+    const timerKey = focusTimerStorageKey(userId);
+    const pendingKey = focusPendingStorageKey(userId);
+    const [timerRaw, legacyTimerRaw, pendingRaw, legacyPendingRaw] = await Promise.all([
+      AsyncStorage.getItem(timerKey), AsyncStorage.getItem(FOCUS_TIMER_STORAGE_KEY),
+      AsyncStorage.getItem(pendingKey), AsyncStorage.getItem(FOCUS_PENDING_STORAGE_KEY),
+    ]);
+    if (timerRaw === null) {
+      const legacy = ownedLegacyRecord(legacyTimerRaw, userId);
+      if (legacy) {
+        try {
+          const restored = validateStoredTimer(JSON.parse(legacy));
+          if (restored?.ownerUid === userId) {
+            await AsyncStorage.setItem(timerKey, legacy);
+            await AsyncStorage.removeItem(FOCUS_TIMER_STORAGE_KEY);
+          }
+        } catch { /* Keep malformed legacy data untouched for recovery/debugging. */ }
+      }
+    }
+    if (pendingRaw === null) {
+      const legacy = ownedLegacyRecord(legacyPendingRaw, userId);
+      if (legacy) {
+        await AsyncStorage.setItem(pendingKey, legacy);
+        await AsyncStorage.removeItem(FOCUS_PENDING_STORAGE_KEY);
+      }
+    }
   }, [userId]);
 
   const retryPending = useCallback(async () => {
@@ -124,10 +156,11 @@ export function useFocusTimer(userId?: string) {
         if (alive) { timerRef.current = null; setTimer(null); setFinishedTimer(null); setPendingCount(0); setPendingSessions([]); setRestoring(false); }
         return;
       }
-      const raw = await AsyncStorage.getItem(FOCUS_TIMER_STORAGE_KEY);
+      await migrateLegacyStorage();
+      const raw = await AsyncStorage.getItem(focusTimerStorageKey(userId));
       let restored: ActiveTimer | null = null;
       try { restored = validateStoredTimer(raw ? JSON.parse(raw) : null); } catch { /* storage is discarded below */ }
-      if (!restored || restored.ownerUid !== userId) { await empty(); restored = null; }
+      if (!restored || restored.ownerUid !== userId) { await AsyncStorage.removeItem(focusTimerStorageKey(userId)); restored = null; }
       if (!alive) return;
       timerRef.current = restored;
       setTimer(restored);
@@ -143,16 +176,16 @@ export function useFocusTimer(userId?: string) {
     };
     void restore().catch((cause) => { if (alive) { setSyncError(cause instanceof Error ? cause.message : "Could not restore the timer."); setRestoring(false); } });
     return () => { alive = false; };
-  }, [finish, readPending, retryPending, userId]);
+  }, [finish, migrateLegacyStorage, readPending, retryPending, userId]);
 
   useEffect(() => {
     const interval = setInterval(() => void checkTimer(), 1000);
     const subscription = AppState.addEventListener("change", (state: AppStateStatus) => {
       if (state === "active") { void checkTimer(); void retryPending(); }
-      else if (timerRef.current) void AsyncStorage.setItem(FOCUS_TIMER_STORAGE_KEY, JSON.stringify(timerRef.current));
+      else if (timerRef.current && userId) void AsyncStorage.setItem(focusTimerStorageKey(userId), JSON.stringify(timerRef.current));
     });
     return () => { clearInterval(interval); subscription.remove(); };
-  }, [checkTimer, retryPending]);
+  }, [checkTimer, retryPending, userId]);
 
   const start = useCallback(async ({ kind, taskId, taskTitleSnapshot, intention, durationSeconds: requestedDuration }: StartOptions) => {
     if (!userId) return;
