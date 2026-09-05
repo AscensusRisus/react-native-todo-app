@@ -5,6 +5,7 @@ import { AccessibilityInfo, AppState, type AppStateStatus } from "react-native";
 import { FOCUS_PENDING_STORAGE_KEY, FOCUS_TIMER_STORAGE_KEY, completedSession, durationFor, interruptedSession, isTimerFinished, pauseTimer, remainingSeconds, resumeTimer, type ActiveTimer, type FocusSessionDraft, type IntervalKind, validateFocusSessionDraft, validateStoredTimer } from "@/lib/focus-domain";
 import { focusPendingStorageKey, focusTimerStorageKey, ownedLegacyRecord } from "@/lib/focus-storage";
 import { focusSessionSaveMessage, isRetryableFocusSessionError, saveFocusSession } from "@/lib/focus-sessions";
+import { createSerialQueue } from "@/lib/serial-queue";
 
 type PendingEnvelope = { ownerUid: string; sessions: FocusSessionDraft[] };
 type StartOptions = { kind: IntervalKind; taskId: string | null; taskTitleSnapshot: string | null; intention: string; durationSeconds?: number };
@@ -24,6 +25,7 @@ export function useFocusTimer(userId?: string) {
   const previousRemainingRef = useRef<number | null>(null);
   const lastTickAtRef = useRef<number | null>(null);
   const blockedPendingIdsRef = useRef<Set<string>>(new Set());
+  const queueRef = useRef(createSerialQueue());
 
   const setActiveTimer = useCallback(async (next: ActiveTimer | null) => {
     if (!userId) return;
@@ -91,7 +93,7 @@ export function useFocusTimer(userId?: string) {
     }
   }, [userId]);
 
-  const retryPending = useCallback(async () => {
+  const retryPendingNow = useCallback(async () => {
     if (!userId) return;
     const pending = await readPending();
     if (!pending.length) { setPendingCount(0); return; }
@@ -110,10 +112,14 @@ export function useFocusTimer(userId?: string) {
   }, [readPending, userId, writePending]);
 
   const enqueueSession = useCallback(async (session: FocusSessionDraft) => {
-    const pending = await readPending();
-    if (!pending.some((item) => item.id === session.id)) await writePending([...pending, session]);
-    void retryPending().catch((cause) => setSyncError(cause instanceof Error ? cause.message : "Waiting to sync."));
-  }, [readPending, retryPending, writePending]);
+    await queueRef.current(async () => {
+      const pending = await readPending();
+      if (!pending.some((item) => item.id === session.id)) await writePending([...pending, session]);
+      await retryPendingNow();
+    });
+  }, [readPending, retryPendingNow, writePending]);
+
+  const retryPending = useCallback(async () => queueRef.current(retryPendingNow), [retryPendingNow]);
 
   const finish = useCallback(async (active: ActiveTimer, currentNow = Date.now()) => {
     if (finishingIdRef.current === active.intervalId) return;
