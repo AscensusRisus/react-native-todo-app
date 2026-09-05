@@ -26,7 +26,7 @@ export default function FocusScreen() {
   const { tasks, loading, error: tasksError } = useTasks(user?.uid);
   const today = useTodayKey();
   const { preferences, loading: preferencesLoading, error: preferencesError, setDuration } = useFocusPreferences(user?.uid);
-  const { timer, remainingSeconds, finishedTimer, pendingCount, pendingSessions, syncError, restoring, start, pause, resume, end, unlinkTask, dismissFinished, retryPending } = useFocusTimer(user?.uid);
+  const { timer, remainingSeconds, finishedTimer, pendingCount, pendingSessions, syncError, notificationNotice, restoring, start, pause, resume, end, unlinkTask, dismissFinished, retryPending } = useFocusTimer(user?.uid);
   const { summary, error: sessionsError } = useFocusSessions(user?.uid, pendingSessions);
   const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
   const [kind, setKind] = useState<IntervalKind>("focus");
@@ -93,7 +93,7 @@ export default function FocusScreen() {
       <TextInput label="Focus intention (optional)" value={intention} onChangeText={(value) => setIntention(value.slice(0, 120))} maxLength={120} mode="outlined" style={styles.input} dense placeholder="Draft the opening section" />
       <HelperText type="info" visible>{intention.length}/120</HelperText>
       <IntervalSettings durations={preferences?.durations ?? DEFAULT_INTERVAL_DURATIONS} disabled={preferencesLoading} onChange={changeDuration} />
-      <Surface style={styles.sound} elevation={0}><Text style={styles.soundTitle}>Interval alert</Text><Text style={styles.soundCopy}>Haptic confirmation</Text></Surface>
+      <Surface style={styles.sound} elevation={0}><Text style={styles.soundTitle}>Interval alert</Text><Text style={styles.soundCopy}>Haptic confirmation and an optional lock-screen notification.</Text>{notificationNotice && <Text style={styles.warning}>{notificationNotice}</Text>}</Surface>
     </>}
     <FocusTimer timer={timer} remaining={remainingSeconds} selectedKind={kind} durations={preferences?.durations ?? DEFAULT_INTERVAL_DURATIONS} onSelectKind={setKind} onStart={() => void startTimer()} onPause={() => void pause()} onResume={() => void resume()} onEnd={requestEnd} disabled={restoring || preferencesLoading} startDisabled={kind === "focus" && !selectedTask} />
     {confirmingEnd && <Surface style={styles.endConfirm} elevation={0}><Text variant="titleMedium" style={styles.endTitle}>End this interval?</Text><Text style={styles.endCopy}>Focus time is saved only after one minute. This cannot be undone.</Text><Button mode="contained" buttonColor={colors.danger} onPress={() => void endTimer()}>End interval</Button><Button mode="text" onPress={() => setConfirmingEnd(false)}>Keep going</Button></Surface>}

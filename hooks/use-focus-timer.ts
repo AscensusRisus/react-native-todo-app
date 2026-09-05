@@ -6,6 +6,7 @@ import { FOCUS_PENDING_STORAGE_KEY, FOCUS_TIMER_STORAGE_KEY, completedSession, d
 import { focusPendingStorageKey, focusTimerStorageKey, ownedLegacyRecord } from "@/lib/focus-storage";
 import { INITIAL_RETRY_DELAY_MS, nextRetryDelay } from "@/lib/retry-backoff";
 import { focusSessionSaveMessage, isRetryableFocusSessionError, saveFocusSession } from "@/lib/focus-sessions";
+import { cancelFocusCompletionNotification, scheduleFocusCompletionNotification } from "@/lib/focus-notifications";
 import { createSerialQueue } from "@/lib/serial-queue";
 
 type PendingEnvelope = { ownerUid: string; sessions: FocusSessionDraft[] };
@@ -14,6 +15,8 @@ type StartOptions = { kind: IntervalKind; taskId: string | null; taskTitleSnapsh
 const newIntervalId = () => `focus-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 const TIMER_STORAGE_ERROR = "Could not save the timer on this device. Try again.";
 const PENDING_STORAGE_ERROR = "Could not save pending focus data on this device. Try again.";
+const NOTIFICATION_ERROR = "Could not update the completion notification. The timer will still work.";
+const NOTIFICATION_DENIED = "Notifications are off. The timer will still work, but no lock-screen alert will arrive.";
 
 export function useFocusTimer(userId?: string) {
   const currentUserIdRef = useRef(userId);
@@ -24,6 +27,7 @@ export function useFocusTimer(userId?: string) {
   const [pendingCount, setPendingCount] = useState(0);
   const [pendingSessions, setPendingSessions] = useState<FocusSessionDraft[]>([]);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [notificationNotice, setNotificationNotice] = useState<string | null>(null);
   const [restoring, setRestoring] = useState(true);
   const timerRef = useRef<ActiveTimer | null>(null);
   const finishingIdRef = useRef<string | null>(null);
@@ -35,7 +39,7 @@ export function useFocusTimer(userId?: string) {
   const retryDelayRef = useRef(INITIAL_RETRY_DELAY_MS);
 
   const setActiveTimer = useCallback(async (next: ActiveTimer | null) => {
-    if (!userId) return;
+    if (!userId || currentUserIdRef.current !== userId) return;
     const key = focusTimerStorageKey(userId);
     try {
       if (next) await AsyncStorage.setItem(key, JSON.stringify(next));
@@ -47,6 +51,38 @@ export function useFocusTimer(userId?: string) {
     if (currentUserIdRef.current === userId) {
       timerRef.current = next;
       setTimer(next);
+    }
+  }, [userId]);
+
+  const scheduleNotification = useCallback(async (active: ActiveTimer) => {
+    let notificationId: string | null = null;
+    try {
+      notificationId = await scheduleFocusCompletionNotification(active);
+      if (!notificationId) {
+        if (currentUserIdRef.current === userId) setNotificationNotice(NOTIFICATION_DENIED);
+        return active;
+      }
+      if (currentUserIdRef.current !== userId) {
+        await cancelFocusCompletionNotification(notificationId);
+        return active;
+      }
+      const next = { ...active, completionNotificationId: notificationId };
+      await setActiveTimer(next);
+      if (currentUserIdRef.current === userId) setNotificationNotice(null);
+      return next;
+    } catch {
+      if (notificationId) await cancelFocusCompletionNotification(notificationId).catch(() => undefined);
+      if (currentUserIdRef.current === userId) setNotificationNotice(NOTIFICATION_ERROR);
+      return active;
+    }
+  }, [setActiveTimer, userId]);
+
+  const cancelNotification = useCallback(async (active: ActiveTimer) => {
+    try {
+      await cancelFocusCompletionNotification(active.completionNotificationId);
+    } catch {
+      if (currentUserIdRef.current === userId) setNotificationNotice(NOTIFICATION_ERROR);
+      throw new Error(NOTIFICATION_ERROR);
     }
   }, [userId]);
 
@@ -204,7 +240,7 @@ export function useFocusTimer(userId?: string) {
       nextRetryAtRef.current = 0;
       retryDelayRef.current = INITIAL_RETRY_DELAY_MS;
       if (!userId) {
-        if (alive) { timerRef.current = null; setTimer(null); setFinishedTimer(null); setPendingCount(0); setPendingSessions([]); setRestoring(false); }
+        if (alive) { timerRef.current = null; setTimer(null); setFinishedTimer(null); setPendingCount(0); setPendingSessions([]); setNotificationNotice(null); setRestoring(false); }
         return;
       }
       await migrateLegacyStorage();
@@ -216,6 +252,7 @@ export function useFocusTimer(userId?: string) {
       timerRef.current = restored;
       setTimer(restored);
       setFinishedTimer(null);
+      if (restored?.phase === "running" && restored.deadlineAtMs !== null && restored.deadlineAtMs > Date.now() && !restored.completionNotificationId) restored = await scheduleNotification(restored);
       const restoredPending = await readPending();
       if (!alive || currentUserIdRef.current !== userId) return;
       setPendingCount(restoredPending.length);
@@ -228,7 +265,7 @@ export function useFocusTimer(userId?: string) {
     };
     void restore().catch((cause) => { if (alive && currentUserIdRef.current === userId) { setSyncError(cause instanceof Error ? cause.message : "Could not restore the timer."); setRestoring(false); } });
     return () => { alive = false; };
-  }, [finish, migrateLegacyStorage, readPending, retryPending, userId]);
+  }, [finish, migrateLegacyStorage, readPending, retryPending, scheduleNotification, userId]);
 
   useEffect(() => {
     const interval = setInterval(() => void checkTimer(), 1000);
@@ -247,9 +284,11 @@ export function useFocusTimer(userId?: string) {
     previousRemainingRef.current = durationSeconds;
     lastTickAtRef.current = now;
     setFinishedTimer(null);
-    await setActiveTimer({ version: 1, ownerUid: userId, intervalId: newIntervalId(), kind, taskId, taskTitleSnapshot, intention: intention.trim(), durationSeconds, startedAtMs: now, deadlineAtMs: now + durationSeconds * 1000, remainingWhenPausedSeconds: null, phase: "running", alertSound: null });
+    const active: ActiveTimer = { version: 1, ownerUid: userId, intervalId: newIntervalId(), kind, taskId, taskTitleSnapshot, intention: intention.trim(), durationSeconds, startedAtMs: now, deadlineAtMs: now + durationSeconds * 1000, remainingWhenPausedSeconds: null, phase: "running", alertSound: null, completionNotificationId: null };
+    await setActiveTimer(active);
+    await scheduleNotification(active);
     setNowMs(now);
-  }, [setActiveTimer, userId]);
+  }, [scheduleNotification, setActiveTimer, userId]);
 
   const pause = useCallback(async () => {
     const active = timerRef.current;
@@ -259,9 +298,9 @@ export function useFocusTimer(userId?: string) {
     const next = pauseTimer(active, now);
     previousRemainingRef.current = remainingSeconds(next, now);
     lastTickAtRef.current = now;
-    try { await setActiveTimer(next); } catch { return; }
+    try { await cancelNotification(active); await setActiveTimer(next); } catch { return; }
     setNowMs(now);
-  }, [finish, setActiveTimer]);
+  }, [cancelNotification, finish, setActiveTimer]);
   const resume = useCallback(async () => {
     const active = timerRef.current;
     if (!active) return;
@@ -270,13 +309,15 @@ export function useFocusTimer(userId?: string) {
     previousRemainingRef.current = remainingSeconds(next, now);
     lastTickAtRef.current = now;
     try { await setActiveTimer(next); } catch { return; }
+    await scheduleNotification(next);
     setNowMs(now);
-  }, [setActiveTimer]);
+  }, [scheduleNotification, setActiveTimer]);
   const end = useCallback(async () => {
     const active = timerRef.current;
     if (!active) return;
     const endedAtMs = Date.now();
     if (isTimerFinished(active, endedAtMs)) { await finish(active, endedAtMs); return; }
+    try { await cancelNotification(active); } catch { return; }
     const session = interruptedSession(active, endedAtMs);
     if (session) {
       try { await enqueueSession(session); }
@@ -285,7 +326,7 @@ export function useFocusTimer(userId?: string) {
     try { await setActiveTimer(null); } catch { return; }
     finishingIdRef.current = null;
     setFinishedTimer(null);
-  }, [enqueueSession, finish, setActiveTimer]);
+  }, [cancelNotification, enqueueSession, finish, setActiveTimer]);
   const unlinkTask = useCallback(async (taskId: string) => {
     const active = timerRef.current;
     if (!active || active.taskId !== taskId) return;
@@ -293,5 +334,5 @@ export function useFocusTimer(userId?: string) {
   }, [setActiveTimer]);
   const dismissFinished = useCallback(() => { setFinishedTimer(null); finishingIdRef.current = null; }, []);
 
-  return { timer, remainingSeconds: timer ? remainingSeconds(timer, nowMs) : null, finishedTimer, pendingCount, pendingSessions, syncError, restoring, start, pause, resume, end, unlinkTask, dismissFinished, retryPending };
+  return { timer, remainingSeconds: timer ? remainingSeconds(timer, nowMs) : null, finishedTimer, pendingCount, pendingSessions, syncError, notificationNotice, restoring, start, pause, resume, end, unlinkTask, dismissFinished, retryPending };
 }
