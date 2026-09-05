@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AccessibilityInfo, AppState, type AppStateStatus } from "react-native";
 import { FOCUS_PENDING_STORAGE_KEY, FOCUS_TIMER_STORAGE_KEY, completedSession, durationFor, interruptedSession, isTimerFinished, pauseTimer, remainingSeconds, resumeTimer, type ActiveTimer, type FocusSessionDraft, type IntervalKind, validateFocusSessionDraft, validateStoredTimer } from "@/lib/focus-domain";
 import { focusPendingStorageKey, focusTimerStorageKey, ownedLegacyRecord } from "@/lib/focus-storage";
+import { INITIAL_RETRY_DELAY_MS, nextRetryDelay } from "@/lib/retry-backoff";
 import { focusSessionSaveMessage, isRetryableFocusSessionError, saveFocusSession } from "@/lib/focus-sessions";
 import { createSerialQueue } from "@/lib/serial-queue";
 
@@ -28,6 +29,8 @@ export function useFocusTimer(userId?: string) {
   const lastTickAtRef = useRef<number | null>(null);
   const blockedPendingIdsRef = useRef<Set<string>>(new Set());
   const queueRef = useRef(createSerialQueue());
+  const nextRetryAtRef = useRef(0);
+  const retryDelayRef = useRef(INITIAL_RETRY_DELAY_MS);
 
   const setActiveTimer = useCallback(async (next: ActiveTimer | null) => {
     if (!userId) return;
@@ -104,28 +107,49 @@ export function useFocusTimer(userId?: string) {
     const pending = await readPending();
     if (!pending.length) { if (currentUserIdRef.current === userId) setPendingCount(0); return; }
     const remaining: FocusSessionDraft[] = [];
+    let hasRetryableFailure = false;
     for (const session of pending) {
       if (blockedPendingIdsRef.current.has(session.id)) { remaining.push(session); continue; }
       try { await saveFocusSession(userId, session); }
       catch (cause) {
         remaining.push(session);
-        if (!isRetryableFocusSessionError(cause)) blockedPendingIdsRef.current.add(session.id);
+        if (isRetryableFocusSessionError(cause)) hasRetryableFailure = true;
+        else blockedPendingIdsRef.current.add(session.id);
         if (currentUserIdRef.current === userId) setSyncError(isRetryableFocusSessionError(cause) ? "Waiting to sync your focus session." : focusSessionSaveMessage(cause));
       }
     }
     await writePending(remaining);
     if (!remaining.length && currentUserIdRef.current === userId) setSyncError(null);
+    return hasRetryableFailure;
   }, [readPending, userId, writePending]);
+
+  const runRetry = useCallback(async () => {
+    const hasRetryableFailure = await retryPendingNow();
+    if (currentUserIdRef.current !== userId) return;
+    if (hasRetryableFailure) {
+      nextRetryAtRef.current = Date.now() + retryDelayRef.current;
+      retryDelayRef.current = nextRetryDelay(retryDelayRef.current);
+    } else {
+      nextRetryAtRef.current = 0;
+      retryDelayRef.current = INITIAL_RETRY_DELAY_MS;
+    }
+  }, [retryPendingNow, userId]);
 
   const enqueueSession = useCallback(async (session: FocusSessionDraft) => {
     await queueRef.current(async () => {
       const pending = await readPending();
       if (!pending.some((item) => item.id === session.id)) await writePending([...pending, session]);
-      await retryPendingNow();
+      await runRetry();
     });
-  }, [readPending, retryPendingNow, writePending]);
+  }, [readPending, runRetry, writePending]);
 
-  const retryPending = useCallback(async () => queueRef.current(retryPendingNow), [retryPendingNow]);
+  const retryPending = useCallback(async () => {
+    if (Date.now() < nextRetryAtRef.current) return;
+    await queueRef.current(async () => {
+      if (Date.now() < nextRetryAtRef.current) return;
+      await runRetry();
+    });
+  }, [runRetry]);
 
   const finish = useCallback(async (active: ActiveTimer, currentNow = Date.now()) => {
     if (finishingIdRef.current === active.intervalId) return;
@@ -165,6 +189,8 @@ export function useFocusTimer(userId?: string) {
     const restore = async () => {
       setRestoring(true);
       blockedPendingIdsRef.current.clear();
+      nextRetryAtRef.current = 0;
+      retryDelayRef.current = INITIAL_RETRY_DELAY_MS;
       if (!userId) {
         if (alive) { timerRef.current = null; setTimer(null); setFinishedTimer(null); setPendingCount(0); setPendingSessions([]); setRestoring(false); }
         return;
