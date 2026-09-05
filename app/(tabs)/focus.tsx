@@ -85,7 +85,7 @@ export default function FocusScreen() {
     <Text style={styles.eyebrow}>FOCUS ON ONE THING</Text>
     <Text variant="headlineMedium" style={styles.heading}>Focus</Text>
     <Text style={styles.summary}>{summary.rounds} {summary.rounds === 1 ? "round" : "rounds"} · {summary.focusedMinutes} focused minutes</Text>
-    {(pendingCount > 0 || syncError) && <Surface style={styles.sync} elevation={0}><Text style={styles.syncText}>Waiting to sync {pendingCount === 1 ? "1 session" : `${pendingCount} sessions`}. Your timer data is safe on this device.</Text></Surface>}
+    {pendingCount > 0 && !syncError && <Surface style={styles.sync} elevation={0}><Text style={styles.syncText}>Waiting to sync {pendingCount === 1 ? "1 session" : `${pendingCount} sessions`}. Your timer data is safe on this device.</Text></Surface>}
     {!!displayTaskTitle && <Surface style={styles.activeTask} elevation={0}><Text style={styles.activeTaskLabel}>FOCUSING ON</Text><Text variant="titleMedium" style={styles.activeTaskTitle}>{displayTaskTitle}{timerTaskDone ? " · completed" : ""}</Text>{timerTaskMissing && <Text style={styles.warning}>This task was deleted. The interval can finish, but choose another task for your next focus round.</Text>}</Surface>}
     {!timer && <>
       <TaskPicker tasks={openTodayTasks} selectedTaskId={selectedTaskId} onSelect={setSelectedTaskId} disabled={restoring} allowNoTask={kind !== "focus"} />
