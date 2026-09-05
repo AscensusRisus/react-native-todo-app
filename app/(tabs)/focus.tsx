@@ -11,7 +11,8 @@ import { useFocusSessions } from "@/hooks/use-focus-sessions";
 import { useFocusPreferences } from "@/hooks/use-focus-preferences";
 import { useFocusTimer } from "@/hooks/use-focus-timer";
 import { useTasks } from "@/hooks/use-tasks";
-import { isTaskCompletedOnDate, isTaskOpenToday, setTaskCompleted, todayKey } from "@/lib/habits";
+import { useTodayKey } from "@/hooks/use-today-key";
+import { isTaskCompletedOnDate, isTaskOpenToday, setTaskCompleted } from "@/lib/habits";
 import type { IntervalKind } from "@/lib/focus-domain";
 import { useAuth } from "@/lib/auth-context";
 import { useAppTheme } from "@/lib/app-theme-context";
@@ -23,6 +24,7 @@ export default function FocusScreen() {
   const styles = useMemo(() => createStyles(colors), [colors]);
   const router = useRouter();
   const { tasks, loading, error: tasksError } = useTasks(user?.uid);
+  const today = useTodayKey();
   const { summary, error: sessionsError } = useFocusSessions(user?.uid);
   const { preferences, loading: preferencesLoading, error: preferencesError, setDuration } = useFocusPreferences(user?.uid);
   const { timer, remainingSeconds, finishedTimer, pendingCount, pendingSessions, syncError, restoring, start, pause, resume, end, unlinkTask, dismissFinished, retryPending } = useFocusTimer(user?.uid);
@@ -37,11 +39,11 @@ export default function FocusScreen() {
   const activeTask = timer?.taskId ? tasks.find((task) => task.id === timer.taskId) ?? null : null;
   const finishedTask = finishedTimer?.taskId ? tasks.find((task) => task.id === finishedTimer.taskId) ?? null : null;
   const timerTaskMissing = !!timer?.taskId && !activeTask;
-  const timerTaskDone = !!activeTask && isTaskCompletedOnDate(activeTask, todayKey());
+  const timerTaskDone = !!activeTask && isTaskCompletedOnDate(activeTask, today);
   const displayedSummary = useMemo(() => {
-    const pendingFocus = pendingSessions.filter((session) => session.localDate === todayKey() && session.status === "completed" && session.kind === "focus");
+    const pendingFocus = pendingSessions.filter((session) => session.localDate === today && session.status === "completed" && session.kind === "focus");
     return { rounds: summary.rounds + pendingFocus.length, focusedMinutes: summary.focusedMinutes + Math.floor(pendingFocus.reduce((total, session) => total + session.focusedSeconds, 0) / 60) };
-  }, [pendingSessions, summary]);
+  }, [pendingSessions, summary, today]);
 
   useEffect(() => {
     if (timer?.taskId && !loading && !activeTask) void unlinkTask(timer.taskId);
@@ -76,7 +78,7 @@ export default function FocusScreen() {
   };
   const markDone = async () => {
     if (!user || !finishedTimer?.taskId) return;
-    try { await setTaskCompleted(user.uid, finishedTimer.taskId, todayKey(), true); dismissFinished(); }
+    try { await setTaskCompleted(user.uid, finishedTimer.taskId, today, true); dismissFinished(); }
     catch (cause) { setActionError(cause instanceof Error ? cause.message : "Could not mark this task done."); }
   };
   const changeDuration = (nextKind: IntervalKind, seconds: number) => { void setDuration(nextKind, seconds).then((updated) => { if (!updated) setActionError("Use a duration within the allowed range."); }); };
@@ -100,7 +102,7 @@ export default function FocusScreen() {
     <FocusTimer timer={timer} remaining={remainingSeconds} selectedKind={kind} durations={preferences?.durations ?? DEFAULT_INTERVAL_DURATIONS} onSelectKind={setKind} onStart={() => void startTimer()} onPause={() => void pause()} onResume={() => void resume()} onEnd={requestEnd} disabled={restoring || preferencesLoading} startDisabled={kind === "focus" && !selectedTask} />
     {confirmingEnd && <Surface style={styles.endConfirm} elevation={0}><Text variant="titleMedium" style={styles.endTitle}>End this interval?</Text><Text style={styles.endCopy}>Focus time is saved only after one minute. This cannot be undone.</Text><Button mode="contained" buttonColor={colors.danger} onPress={() => void endTimer()}>End interval</Button><Button mode="text" onPress={() => setConfirmingEnd(false)}>Keep going</Button></Surface>}
     {error && <Surface style={styles.error} elevation={0}><Text style={styles.errorText}>{error}</Text></Surface>}
-    {finishedTimer && <Surface style={styles.finished} elevation={0} accessibilityLiveRegion="polite"><Text variant="titleLarge" style={styles.finishedTitle}>{finishedTimer.kind === "focus" ? "Focus round complete" : "Break complete"}</Text><Text style={styles.finishedCopy}>{finishedTimer.kind === "focus" ? "Take a breath, then choose what feels right." : "Ready when you are."}</Text><Button mode="contained" icon="coffee-outline" onPress={() => void startBreak()} style={styles.finishedButton}>Start short break</Button><Button mode="outlined" icon="refresh" onPress={() => void focusAgain()} style={styles.finishedButton}>Focus again</Button>{finishedTimer.kind === "focus" && finishedTimer.taskId && finishedTask && !isTaskCompletedOnDate(finishedTask, todayKey()) && <Button mode="text" icon="check" onPress={() => void markDone()}>Mark task done</Button>}</Surface>}
+    {finishedTimer && <Surface style={styles.finished} elevation={0} accessibilityLiveRegion="polite"><Text variant="titleLarge" style={styles.finishedTitle}>{finishedTimer.kind === "focus" ? "Focus round complete" : "Break complete"}</Text><Text style={styles.finishedCopy}>{finishedTimer.kind === "focus" ? "Take a breath, then choose what feels right." : "Ready when you are."}</Text><Button mode="contained" icon="coffee-outline" onPress={() => void startBreak()} style={styles.finishedButton}>Start short break</Button><Button mode="outlined" icon="refresh" onPress={() => void focusAgain()} style={styles.finishedButton}>Focus again</Button>{finishedTimer.kind === "focus" && finishedTimer.taskId && finishedTask && !isTaskCompletedOnDate(finishedTask, today) && <Button mode="text" icon="check" onPress={() => void markDone()}>Mark task done</Button>}</Surface>}
   </AppScreen>;
 }
 

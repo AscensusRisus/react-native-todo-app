@@ -6,8 +6,9 @@ import { ActivityIndicator, Button, Chip, IconButton, ProgressBar, Surface, Text
 import { AppScreen } from "@/components/app-screen";
 import { TaskCard } from "@/components/task-card";
 import { useTasks } from "@/hooks/use-tasks";
+import { useTodayKey } from "@/hooks/use-today-key";
 import { useAuth } from "@/lib/auth-context";
-import { dueDateLabel, isTaskCompletedOnDate, removeTask, setTaskCompleted, shouldShowToday, taskDateState, todayKey, type Task } from "@/lib/habits";
+import { dueDateLabel, isTaskCompletedOnDate, removeTask, setTaskCompleted, shouldShowToday, taskDateState, type Task } from "@/lib/habits";
 import { useAppTheme } from "@/lib/app-theme-context";
 
 type Filter = "all" | "open" | "done";
@@ -20,10 +21,11 @@ export default function TodayScreen() {
   const { tasks: habits, loading, error: loadError } = useTasks(user?.uid);
   const [actionError, setActionError] = useState<string | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
-  const today = todayKey();
+  const today = useTodayKey();
+  const todayDate = useMemo(() => new Date(`${today}T12:00:00`), [today]);
   const error = actionError ?? loadError;
 
-  const todaysTasks = useMemo(() => habits.filter((task) => shouldShowToday(task)), [habits]);
+  const todaysTasks = useMemo(() => habits.filter((task) => shouldShowToday(task, todayDate)), [habits, todayDate]);
   const completed = todaysTasks.filter((task) => isTaskCompletedOnDate(task, today)).length;
   const visibleTasks = todaysTasks.filter((task) => filter === "all" || (filter === "done") === isTaskCompletedOnDate(task, today));
   const progress = todaysTasks.length ? completed / todaysTasks.length : 0;
