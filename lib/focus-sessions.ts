@@ -1,5 +1,6 @@
 import { collection, doc, onSnapshot, orderBy, query, runTransaction, serverTimestamp, Timestamp, type Firestore } from "firebase/firestore";
 import { db, firebaseSetupError } from "./firebase";
+import { readableDataError } from "./error-messages";
 import { focusSessionPayload, sameFocusSessionContent, validateFocusSessionDraft, type FocusSessionDraft, type IntervalKind } from "./focus-domain";
 
 export type FocusSession = Omit<FocusSessionDraft, "id" | "startedAtMs" | "endedAtMs"> & { id: string; endedAtMs?: number };
@@ -24,7 +25,7 @@ const errorCode = (cause: unknown) => {
   return typeof code === "string" ? code.replace(/^firebase\//, "") : "unknown";
 };
 
-const errorMessage = (cause: unknown) => cause instanceof Error ? cause.message.replace("FirebaseError: ", "") : "Could not save the focus session.";
+const errorMessage = (cause: unknown) => readableDataError(cause, "Could not save the focus session.");
 
 export function isRetryableFocusSessionError(cause: unknown): cause is FocusSessionSaveError {
   return cause instanceof FocusSessionSaveError && cause.retryable;
@@ -99,5 +100,5 @@ export async function saveFocusSession(userId: string, session: FocusSessionDraf
 }
 
 export function subscribeToFocusSessions(userId: string, onChange: (sessions: FocusSession[]) => void, onError: (message: string) => void) {
-  return onSnapshot(query(sessionsCollection(userId), orderBy("endedAt", "desc")), (snapshot) => onChange(snapshot.docs.map((item) => fromSnapshot(item.id, item.data())).filter((item): item is FocusSession => item !== null)), (error) => onError(error.message.replace("FirebaseError: ", "")));
+  return onSnapshot(query(sessionsCollection(userId), orderBy("endedAt", "desc")), (snapshot) => onChange(snapshot.docs.map((item) => fromSnapshot(item.id, item.data())).filter((item): item is FocusSession => item !== null)), (error) => onError(readableDataError(error, "Could not load your focus history.")));
 }

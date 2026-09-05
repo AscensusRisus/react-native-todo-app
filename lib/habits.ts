@@ -11,6 +11,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { db, firebaseSetupError } from "./firebase";
+import { readableDataError } from "./error-messages";
 import { dateKey, isDateKey, isTaskCategory, isTaskPriority, isTaskSchedule, nextCompletionDates, validateTaskDraft, type TaskDraft } from "./task-domain";
 
 export type { TaskDraft, TaskPriority, TaskSchedule } from "./task-domain";
@@ -48,7 +49,7 @@ export function subscribeToTasks(userId: string, onChange: (tasks: Task[]) => vo
   return onSnapshot(
     query(tasksCollection(userId), orderBy("createdAt", "asc")),
     (snapshot) => onChange(snapshot.docs.map((item) => fromSnapshot(item.id, item.data()))),
-    (error) => onError(error.message.replace("FirebaseError: ", "")),
+    (error) => onError(readableDataError(error, "Could not load your tasks.")),
   );
 }
 
@@ -56,7 +57,7 @@ export function subscribeToTask(userId: string, taskId: string, onChange: (task:
   return onSnapshot(
     taskDocument(userId, taskId),
     (snapshot) => onChange(snapshot.exists() ? fromSnapshot(snapshot.id, snapshot.data()) : null),
-    (error) => onError(error.message.replace("FirebaseError: ", "")),
+    (error) => onError(readableDataError(error, "Could not load this task.")),
   );
 }
 
@@ -64,29 +65,37 @@ export async function createTask(userId: string, task: TaskDraft) {
   const validationError = validateTaskDraft(task);
   if (validationError) throw new Error(validationError);
   const taskRef = doc(tasksCollection(userId));
-  await setDoc(taskRef, { ...task, title: task.title.trim(), notes: task.notes.trim(), createdDate: dateKey(), completions: [], createdAt: serverTimestamp() });
+  try {
+    await setDoc(taskRef, { ...task, title: task.title.trim(), notes: task.notes.trim(), createdDate: dateKey(), completions: [], createdAt: serverTimestamp() });
+  } catch (cause) { throw new Error(readableDataError(cause, "Could not save this task.")); }
 }
 
 export async function updateTask(userId: string, taskId: string, task: TaskDraft) {
   const validationError = validateTaskDraft(task);
   if (validationError) throw new Error(validationError);
-  await updateDoc(taskDocument(userId, taskId), { ...task, title: task.title.trim(), notes: task.notes.trim() });
+  try {
+    await updateDoc(taskDocument(userId, taskId), { ...task, title: task.title.trim(), notes: task.notes.trim() });
+  } catch (cause) { throw new Error(readableDataError(cause, "Could not update this task.")); }
 }
 
 export async function setTaskCompleted(userId: string, taskId: string, date: string, completed: boolean) {
   if (!isDateKey(date)) throw new Error("Completion date must be a real calendar date.");
   if (!db) throw new Error(firebaseSetupError ?? "Firebase is unavailable.");
   const ref = taskDocument(userId, taskId);
-  await runTransaction(db, async (transaction) => {
-    const snapshot = await transaction.get(ref);
-    if (!snapshot.exists()) throw new Error("This task is no longer available.");
-    const data = snapshot.data();
-    const schedule = isTaskSchedule(data.schedule) ? data.schedule : "daily";
-    const completions = Array.isArray(data.completions) ? data.completions.filter((item): item is string => typeof item === "string" && isDateKey(item)) : [];
-    transaction.update(ref, { completions: nextCompletionDates({ schedule, completions }, date, completed) });
-  });
+  try {
+    await runTransaction(db, async (transaction) => {
+      const snapshot = await transaction.get(ref);
+      if (!snapshot.exists()) throw new Error("This task is no longer available.");
+      const data = snapshot.data();
+      const schedule = isTaskSchedule(data.schedule) ? data.schedule : "daily";
+      const completions = Array.isArray(data.completions) ? data.completions.filter((item): item is string => typeof item === "string" && isDateKey(item)) : [];
+      transaction.update(ref, { completions: nextCompletionDates({ schedule, completions }, date, completed) });
+    });
+  } catch (cause) { throw new Error(readableDataError(cause, "Could not update this task.")); }
 }
 
 export async function removeTask(userId: string, taskId: string) {
-  await deleteDoc(taskDocument(userId, taskId));
+  try {
+    await deleteDoc(taskDocument(userId, taskId));
+  } catch (cause) { throw new Error(readableDataError(cause, "Could not delete this task.")); }
 }
