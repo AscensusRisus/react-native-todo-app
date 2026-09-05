@@ -11,12 +11,14 @@ Users create an account, verify their email, then organise routines and one-time
 - Create, edit, complete, and delete tasks
 - Plain-text task details with a clear 2,000-character limit
 - Daily, weekday, weekend, and one-time schedules
+- Creation-date-aware recurring schedules and a calendar that distinguishes planned dates from actual completions
 - Due dates with upcoming and overdue states
 - Today progress, focus activity totals, and a private task calendar
 - Task-connected Focus timer with 25-minute focus, 5-minute short-break, and 15-minute long-break intervals
 - Timestamp-based countdown recovery after backgrounding or restarting the app on the same device
-- Private, immutable focus-session history with retry-safe local syncing when a connection is unavailable
-- Responsive mobile-first layout for Android and iOS
+- Private, immutable focus-session history with duplicate-safe writes and retry-safe local syncing when a connection is unavailable
+- Account-scoped timer and pending-session storage with serialized delivery and bounded reconnect retries
+- Mobile-first layout intended for Android and iOS; native device verification remains part of the release checklist
 
 ## Tech stack
 
@@ -85,11 +87,11 @@ The `EXPO_PUBLIC_FIREBASE_*` values are client configuration values. Never add a
 npm run verify
 ```
 
-This runs TypeScript checking, Expo linting, and unit tests covering task scheduling plus timestamp-derived focus timer behavior.
+This runs TypeScript checking, linting across `app`, `components`, `hooks`, and `lib`, and unit tests covering task scheduling plus timestamp-derived focus timer behavior.
 
 ## Current scope
 
-Focus intervals are local to the current device while active; they are not live-controlled across devices. The app does not use notifications or keep-awake behavior, so timer correctness comes from its stored deadline rather than the app staying open. Focus sessions retry locally after a temporary Firestore failure. The app intentionally does not yet include shared lists, a released store build, or automated Firebase security-rule tests.
+Focus intervals are local to the current device while active; they are not live-controlled across devices. The app does not use notifications or keep-awake behavior, so timer correctness comes from its stored deadline rather than the app staying open. Focus sessions retry locally after a temporary Firestore failure, while task mutations—including task completion—still require a connection and do not use the focus-session queue. Completing a focus interval never completes its linked task automatically. Current-day Focus and Progress totals include valid pending sessions stored for the signed-in account. The app intentionally does not yet include shared lists, a released store build, or automated Firebase security-rule tests.
 
 ## Real-device checklist
 
@@ -103,3 +105,5 @@ Before publishing or recording a demo:
 6. Start a focus round, background or lock the device, then return and confirm the timestamp-derived remaining time.
 7. Pause a focus round, force-close Expo Go, reopen it with the same account, and confirm the paused value is restored.
 8. Test a finished round while offline, reconnect, and confirm one focus session eventually appears in Firestore.
+9. Confirm that offline task completion reports an error rather than displaying a false success.
+10. Switch accounts with pending focus sessions and confirm each account sees only its own local queue.
